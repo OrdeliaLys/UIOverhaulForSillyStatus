@@ -13,6 +13,12 @@ body.uio-on {
     --uio-card: rgba(255, 255, 255, 0.045);
     --uio-line: rgba(255, 255, 255, 0.09);
     --uio-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    /* the shared "chrome" pieces: buttons, fields and floating pills */
+    --uio-chip: rgba(255, 255, 255, 0.06);
+    --uio-chip-hover: rgba(255, 255, 255, 0.11);
+    --uio-surface: rgba(24, 22, 30, 0.88);
+    --uio-radius: 12px;
+    --uio-control: 38px;
 }
 
 /* ===================== Like button ===================== */
@@ -64,12 +70,19 @@ body.uio-no-chat-likes .uio-like-chat {
     display: none !important;
 }
 
-/* In chat the button is small: icon and count only. */
+/* In chat the button is small: icon and count only. Before the first like it
+   is just a faint icon, so it doesn't compete with the name. */
 .uio-like-chat {
     min-height: 24px;
     padding: 0 8px;
     margin-left: 8px;
     align-self: center;
+}
+
+.uio-like-chat:not(.uio-liked) {
+    border-color: transparent;
+    background: none;
+    opacity: 0.5;
 }
 
 .uio-like-chat .uio-like-label {
@@ -623,4 +636,360 @@ body.uio-chat-bubbles #chat .ch_name .alignItemsBaseline {
 body.uio-chat-bubbles #chat .mes[is_user="true"] .sfx-badges {
     right: auto;
     left: -10px;
+}
+
+
+/* ===================== Chrome: top bar, panel headers, other extensions ===================== */
+/* One visual language for everything around the lists and the chat: rounded
+   12px controls on a faint fill, the accent for whatever is active, hairline
+   borders, and no extra blur (blur is costly on phones). Only colours, sizes
+   and corners change; nothing is moved or hidden. */
+
+/* --- top bar tabs --- */
+body.uio-chrome #top-bar {
+    box-shadow: none;
+    border-bottom: 1px solid var(--uio-line);
+}
+
+body.uio-chrome #top-settings-holder .drawer-icon {
+    font-size: calc(var(--topBarIconSize) * 0.78);
+    padding: 6px 7px;
+    border-radius: var(--uio-radius);
+    background: transparent;
+    color: var(--SmartThemeBodyColor, #ddd);
+    transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+body.uio-chrome #top-settings-holder .drawer-icon.closedIcon {
+    opacity: 0.5;
+}
+
+body.uio-chrome #top-settings-holder .drawer-icon.openIcon {
+    opacity: 1;
+    background: var(--uio-accent-soft);
+    color: var(--uio-accent);
+    box-shadow: inset 0 0 0 1px var(--uio-accent-line);
+}
+
+/* The "not connected" plug keeps its warning colour. */
+body.uio-chrome #top-settings-holder .drawer-icon.redOverlayGlow {
+    color: #e0524c;
+}
+
+/* --- shared controls inside the character and persona panels --- */
+body.uio-chrome #rm_button_bar .menu_button,
+body.uio-chrome #rm_print_characters_pagination .menu_button,
+body.uio-chrome #persona-management-block .menu_button.fa-solid,
+body.uio-chrome #rm_button_search,
+body.uio-chrome #rm_button_characters {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--uio-control);
+    height: var(--uio-control);
+    min-width: var(--uio-control);
+    aspect-ratio: auto;
+    margin: 0;
+    padding: 0;
+    font-size: calc(var(--mainFontSize) * 1.05);
+    border-radius: var(--uio-radius);
+    border: 1px solid transparent;
+    background: var(--uio-chip);
+    color: var(--SmartThemeBodyColor, #ddd);
+    filter: none;
+    opacity: 0.85;
+    box-shadow: none;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+body.uio-chrome #rm_button_bar .menu_button:hover,
+body.uio-chrome #rm_print_characters_pagination .menu_button:hover,
+body.uio-chrome #persona-management-block .menu_button.fa-solid:hover,
+body.uio-chrome #rm_button_search:hover,
+body.uio-chrome #rm_button_characters:hover {
+    background: var(--uio-chip-hover);
+    opacity: 1;
+}
+
+body.uio-chrome #rm_button_search.active,
+body.uio-chrome #rm_print_characters_pagination .menu_button.toggleEnabled,
+body.uio-chrome #rm_button_characters.selected-right-tab {
+    background: var(--uio-accent-soft);
+    border-color: var(--uio-accent-line);
+    color: var(--uio-accent);
+    opacity: 1;
+}
+
+body.uio-chrome #charListFixedTop select,
+body.uio-chrome #charListFixedTop input[type="search"],
+body.uio-chrome #rm_print_characters_pagination select,
+body.uio-chrome #persona-management-block input[type="search"],
+body.uio-chrome #persona-management-block .paginationjs-size-changer select {
+    height: var(--uio-control);
+    min-height: var(--uio-control);
+    margin: 0;
+    padding: 0 12px;
+    border-radius: var(--uio-radius);
+    border: 1px solid var(--uio-line);
+    background-color: var(--uio-chip);
+    color: var(--SmartThemeBodyColor, #ddd);
+    font-size: calc(var(--mainFontSize) * 0.95);
+    box-shadow: none;
+}
+
+body.uio-chrome #charListFixedTop select:focus,
+body.uio-chrome #charListFixedTop input[type="search"]:focus,
+body.uio-chrome #persona-management-block input[type="search"]:focus {
+    outline: none;
+    border-color: var(--uio-accent-line);
+    box-shadow: 0 0 0 3px var(--uio-accent-soft);
+}
+
+/* --- character panel header --- */
+body.uio-chrome #CharListButtonAndHotSwaps {
+    gap: 10px;
+    padding: 6px 6px 2px;
+}
+
+body.uio-chrome #rm_button_characters {
+    font-size: calc(var(--mainFontSize) * 1.15);
+}
+
+body.uio-chrome .hotswap:empty::before,
+body.uio-chrome .hotswap[no_favs]:empty::before {
+    font-size: 0.82em;
+    opacity: 0.55;
+}
+
+body.uio-chrome #rm_button_selected_ch {
+    opacity: 1;
+    padding: 2px 8px;
+}
+
+body.uio-chrome #rm_button_selected_ch h2 {
+    font-size: calc(var(--mainFontSize) * 1.2);
+    font-weight: 700;
+    color: var(--SmartThemeBodyColor, #ddd);
+    opacity: 0.92;
+}
+
+body.uio-chrome #charListFixedTop {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 6px;
+}
+
+body.uio-chrome #rm_button_bar {
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+body.uio-chrome #rm_button_bar #character_sort_order {
+    flex: 1;
+    min-width: 0;
+}
+
+body.uio-chrome #rm_characters_block .right_menu_button#rm_button_search {
+    padding: 0;
+}
+
+body.uio-chrome #form_character_search_form:empty,
+body.uio-chrome #form_character_search_form[style*="display: none"] {
+    display: none;
+}
+
+/* Filter row: the coloured circles become matching rounded squares; an active
+   filter takes the accent, an excluded one keeps a red outline. */
+body.uio-chrome .rm_tag_controls {
+    margin: 0;
+}
+
+body.uio-chrome .rm_tag_filter {
+    gap: 6px;
+    margin: 0;
+}
+
+body.uio-chrome .rm_tag_filter .tag.actionable {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    margin: 0;
+    border-radius: var(--uio-radius);
+    border: 1px solid transparent;
+    background-color: var(--uio-chip) !important;
+    color: var(--SmartThemeBodyColor, #ddd) !important;
+    opacity: 0.75;
+    filter: none;
+}
+
+body.uio-chrome .rm_tag_filter .tag.actionable:hover {
+    background-color: var(--uio-chip-hover) !important;
+    opacity: 1;
+}
+
+body.uio-chrome .rm_tag_filter .tag.actionable.selected {
+    background-color: var(--uio-accent-soft) !important;
+    border-color: var(--uio-accent-line);
+    color: var(--uio-accent) !important;
+    opacity: 1;
+}
+
+body.uio-chrome .rm_tag_filter .tag.actionable.excluded {
+    border-color: rgba(224, 82, 76, 0.7);
+}
+
+body.uio-chrome .rm_tag_filter .tag.actionable.clearAllFilters {
+    background-color: transparent !important;
+}
+
+body.uio-chrome .rm_tag_filter .tag.actionable .tag_remove {
+    display: none;
+}
+
+/* Ordinary tags in the filter row (when the tag list is open) become pills. */
+body.uio-chrome .rm_tag_filter .tag:not(.actionable) {
+    border-radius: 999px;
+    border: 1px solid var(--uio-line);
+    padding: 2px 10px;
+}
+
+/* Pagination: one tidy row of the same controls, separated from the list. */
+body.uio-chrome #rm_print_characters_pagination {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 2px 6px 8px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--uio-line);
+}
+
+body.uio-chrome #rm_print_characters_pagination .paginationjs {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+body.uio-chrome #rm_print_characters_pagination .paginationjs-nav {
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.65;
+    margin: 0 2px;
+}
+
+body.uio-chrome .paginationjs-pages ul {
+    gap: 4px;
+}
+
+body.uio-chrome .paginationjs-pages ul li a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 4px;
+    border-radius: 10px;
+    border: none;
+    background: var(--uio-chip);
+    color: var(--SmartThemeBodyColor, #ddd);
+    font-size: 0.95em;
+}
+
+body.uio-chrome .paginationjs-pages ul li a:hover {
+    background: var(--uio-chip-hover);
+}
+
+body.uio-chrome .paginationjs-pages ul li.disabled a {
+    opacity: 0.3;
+}
+
+body.uio-chrome .paginationjs-pages ul li.active a {
+    background: var(--uio-accent-soft);
+    color: var(--uio-accent);
+}
+
+body.uio-chrome #rm_print_characters_pagination .paginationjs-size-changer select {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 8px;
+    border-radius: 10px;
+}
+
+body.uio-chrome #rm_print_characters_pagination .menu_button {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+}
+
+/* --- SillyStatus button and panel --- */
+body.uio-chrome #sfx-toggle {
+    min-height: 34px;
+    padding: 4px 11px;
+    border-radius: var(--uio-radius);
+    border: 1px solid var(--uio-line);
+    background: var(--uio-surface);
+    backdrop-filter: none;
+    box-shadow: var(--uio-shadow);
+    font-size: 0.9em;
+    font-variant-numeric: tabular-nums;
+}
+
+body.uio-chrome #sfx-toggle i {
+    color: var(--uio-accent);
+}
+
+body.uio-chrome #sfx-panel {
+    border-radius: 14px;
+    border-color: var(--uio-line);
+    background: var(--uio-surface);
+    backdrop-filter: none;
+}
+
+/* While the status button floats over the top of the chat, the first message
+   starts below it instead of under it. */
+body.uio-chrome:has(#sfx-root:not([hidden])) #chat {
+    padding-top: 46px;
+}
+
+body.uio-chrome:has(#sfx-root.sfx-right:not([hidden])) #chat {
+    padding-top: 46px;
+}
+
+/* --- SillyTimizer frame-rate meter --- */
+body.uio-chrome #opt-meter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--uio-line);
+    background: var(--uio-surface);
+    color: var(--SmartThemeBodyColor, #ddd);
+    font: 600 11px/1.4 system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+    box-shadow: var(--uio-shadow);
+}
+
+body.uio-chrome #opt-meter::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+body.uio-chrome #opt-meter.opt-ok::before { background: #6fd39a; }
+body.uio-chrome #opt-meter.opt-meh::before { background: #f2c95c; }
+body.uio-chrome #opt-meter.opt-bad::before { background: #ff7a74; }
+
+body.uio-chrome #opt-meter.opt-ok,
+body.uio-chrome #opt-meter.opt-meh,
+body.uio-chrome #opt-meter.opt-bad {
+    color: var(--SmartThemeBodyColor, #ddd);
 }

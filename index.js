@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const MODULE = 'ui_overhaul';
 
 const STYLES = {
@@ -28,6 +28,8 @@ const DEFAULTS = {
     likeIcon: '♥',
     likesInList: true,
     likesInChat: true,
+    chrome: true,       // restyle the top bar, panel headers and other extensions' buttons
+    sharp: true,        // load full-size portraits instead of SillyTavern's small thumbnails
     likes: {},       // avatar file -> count
     likeNames: {},   // avatar file -> last known name (for the tracker)
 };
@@ -66,10 +68,105 @@ function apply() {
     for (const cls of [...body.classList]) if (cls.startsWith('uio-')) body.classList.remove(cls);
     if (!s.enabled) return;
     body.classList.add('uio-on', `uio-chars-${s.charStyle}`, `uio-personas-${s.personaStyle}`, `uio-chat-${s.chatStyle}`);
+    if (s.chrome) body.classList.add('uio-chrome');
     if (!s.likesInList) body.classList.add('uio-no-list-likes');
     if (!s.likesInChat) body.classList.add('uio-no-chat-likes');
     body.style.setProperty('--uio-accent', s.accent);
     decorateAll();
+}
+
+// ---------- sharp portraits ----------
+// SillyTavern shows small thumbnails (about 96x144) in lists and chat, which
+// look blurry on big tiles and high-density phone screens. When a portrait
+// scrolls into view, its full-size image is offered through srcset. The src
+// attribute stays the thumbnail, because SillyTavern reads it (for example to
+// open the zoomed avatar), and if the full image fails the thumbnail stays.
+
+const SHARP_SCOPE = '#rm_print_characters_block .avatar img, #user_avatar_block .avatar img, #chat .mes .avatar img, .hotswap .avatar img';
+
+function fullImageUrl(src) {
+    const m = /\/thumbnail\?type=(avatar|persona)&file=([^&]+)(?:&t=(\d+))?/.exec(src ?? '');
+    if (!m) return null;
+    const file = encodeURIComponent(decodeURIComponent(m[2]));
+    const base = m[1] === 'avatar' ? `/characters/${file}` : `/User%20Avatars/${file}`;
+    return m[3] ? `${base}?t=${m[3]}` : base;
+}
+
+function sharpen(img) {
+    const src = img.getAttribute('src');
+    if (img.dataset.uioSrc === src && img.hasAttribute('srcset') === !!fullImageUrl(src)) return;
+    img.dataset.uioSrc = src ?? '';
+    const full = settings().enabled && settings().sharp ? fullImageUrl(src) : null;
+    if (!full) {
+        if (img.dataset.uioSharp) { img.removeAttribute('srcset'); delete img.dataset.uioSharp; }
+        return;
+    }
+    img.addEventListener('error', () => { img.removeAttribute('srcset'); delete img.dataset.uioSharp; }, { once: true });
+    img.decoding = 'async';
+    img.dataset.uioSharp = '1';
+    img.srcset = full;
+}
+
+const sharpWatcher = 'IntersectionObserver' in globalThis
+    ? new IntersectionObserver((entries) => {
+        for (const e of entries) {
+            if (!e.isIntersecting) continue;
+            sharpWatcher.unobserve(e.target);
+            e.target.dataset.uioSeen = '1';
+            sharpen(e.target);
+        }
+    }, { rootMargin: '300px' })
+    : null;
+
+function sharpenAll() {
+    for (const img of document.querySelectorAll(SHARP_SCOPE)) {
+        if (img.dataset.uioSeen || !sharpWatcher) sharpen(img);
+        else sharpWatcher.observe(img);
+    }
+}
+
+// ---------- sort by likes ----------
+// SillyTavern sorts the character list by a field on each character, chosen in
+// the sort menu. A read-only "uio_likes" field (not saved into any card) lets a
+// "Most liked" entry in that menu sort by like count.
+
+const SORT_FIELD = 'uio_likes';
+if (!Object.prototype.hasOwnProperty.call(Object.prototype, SORT_FIELD)) {
+    Object.defineProperty(Object.prototype, SORT_FIELD, {
+        configurable: true,
+        enumerable: false,
+        get() {
+            const avatar = this?.avatar;
+            if (typeof avatar !== 'string') return 0;
+            try { return settings().enabled ? likeCount(avatar) : 0; } catch { return 0; }
+        },
+        set(value) {
+            Object.defineProperty(this, SORT_FIELD, { value, writable: true, configurable: true, enumerable: true });
+        },
+    });
+}
+
+function sortLabel() {
+    const s = settings();
+    const label = s.likeLabel.trim();
+    return `${s.likeIcon} ${/^like$/i.test(label) ? 'Most liked' : `Most ${label}s`}`;
+}
+
+function addSortOption() {
+    const select = document.getElementById('character_sort_order');
+    if (!select) return;
+    let opt = select.querySelector(`option[data-field="${SORT_FIELD}"]`);
+    if (!opt) {
+        opt = document.createElement('option');
+        opt.dataset.field = SORT_FIELD;
+        opt.dataset.order = 'desc';
+        const fav = select.querySelector('option[data-field="fav"]');
+        fav ? fav.after(opt) : select.appendChild(opt);
+        const pu = ctx().powerUserSettings;
+        if (pu?.sort_field === SORT_FIELD) opt.selected = true;
+    }
+    opt.textContent = sortLabel();
+    opt.hidden = !settings().enabled;
 }
 
 // ---------- likes ----------
@@ -123,20 +220,34 @@ globalThis.UIOverhaul = {
 
 // ---------- decorating SillyTavern's lists and chat ----------
 
+// Which card a list entry shows. SillyTavern marks entries with data-chid (an
+// index into the character list); the thumbnail's file name is used to check
+// it, so a like always lands on the card that was tapped.
+function entryAvatar(el) {
+    const fromImg = /[?&]file=([^&]+)/.exec(el.querySelector('.avatar img')?.getAttribute('src') ?? '');
+    const imgFile = fromImg ? decodeURIComponent(fromImg[1]) : null;
+    const raw = el.getAttribute('data-chid') ?? el.getAttribute('chid');
+    const ch = raw !== null && raw !== '' ? ctx().characters?.[Number(raw)] : null;
+    if (ch?.avatar && (!imgFile || ch.avatar === imgFile)) return ch.avatar;
+    return imgFile && characterByAvatar(imgFile) ? imgFile : null;
+}
+
 function decorateCharacters() {
     const block = document.getElementById('rm_print_characters_block');
     if (!block) return;
-    const chars = ctx().characters ?? [];
     for (const el of block.querySelectorAll('.character_select')) {
-        const ch = chars[Number(el.getAttribute('chid'))];
-        if (!ch?.avatar) continue;
+        const avatar = entryAvatar(el);
         let btn = el.querySelector('.uio-like');
-        if (btn && btn.dataset.avatar === ch.avatar) {
+        if (!avatar) {
+            btn?.remove();
+            continue;
+        }
+        if (btn && btn.dataset.avatar === avatar) {
             paintLike(btn);
             continue;
         }
         btn?.remove();
-        btn = makeLike(ch.avatar, 'list');
+        btn = makeLike(avatar, 'list');
         el.appendChild(btn); // on the entry itself, so each style can place it freely
     }
 }
@@ -172,22 +283,37 @@ function decorateChat() {
 }
 
 function decorateAll() {
-    if (!settings().enabled) return;
+    if (!settings().enabled) {
+        addSortOption();
+        sharpenAll();
+        return;
+    }
     decorateCharacters();
     decorateChat();
+    addSortOption();
+    sharpenAll();
 }
 
 const observed = new WeakSet();
+const RELEVANT = '.mes, .character_select, .avatar-container, .avatar, img';
+function relevant(m) {
+    if (m.type === 'attributes') return true;
+    for (const n of m.addedNodes) if (n.nodeType === 1 && (n.matches(RELEVANT) || n.querySelector?.(RELEVANT))) return true;
+    return false;
+}
 let decorateTimer = null;
 function watch() {
-    for (const id of ['rm_print_characters_block', 'chat']) {
+    for (const id of ['rm_print_characters_block', 'chat', 'user_avatar_block']) {
         const el = document.getElementById(id);
         if (!el || observed.has(el)) continue;
         observed.add(el);
-        new MutationObserver(() => {
+        new MutationObserver((mutations) => {
+            // Text streaming into a message changes nothing here; only new
+            // entries, messages or pictures need a look.
+            if (!mutations.some(relevant)) return;
             clearTimeout(decorateTimer);
             decorateTimer = setTimeout(decorateAll, 80);
-        }).observe(el, { childList: true });
+        }).observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
     }
 }
 
@@ -253,6 +379,8 @@ function buildSettings() {
                 <label>Persona list <select class="text_pole" data-k="personaStyle">${options(STYLES.lists, s.personaStyle)}</select></label>
                 <label>Chat <select class="text_pole" data-k="chatStyle">${options(STYLES.chat, s.chatStyle)}</select></label>
                 <label>Accent colour <input type="color" data-k="accent"></label>
+                <label class="checkbox_label"><input type="checkbox" data-k="chrome"> Match the top bar, panel headers, status button and FPS meter</label>
+                <label class="checkbox_label"><input type="checkbox" data-k="sharp"> Sharp portraits (full-size images instead of small thumbnails)</label>
                 <hr>
                 <b>Like</b>
                 <div class="uio-two">
@@ -278,6 +406,7 @@ function buildSettings() {
             save();
             apply();
             for (const btn of document.querySelectorAll('.uio-like')) paintLike(btn);
+            if (k === 'sharp' || k === 'enabled') for (const img of document.querySelectorAll(SHARP_SCOPE)) sharpen(img);
             renderTracker();
         };
         input.addEventListener(input.type === 'color' ? 'input' : 'change', onChange);

@@ -24,11 +24,15 @@ Pick a preset to style everything at once, or set each area on its own:
 
 Any area can also be set to **SillyTavern default**. The **Accent colour** tints highlights, names, your bubbles and liked buttons.
 
+**Matching chrome** (on by default) gives the top bar tabs, the character panel's header (buttons, sort menu, search, filter row, pagination), SillyStatus's status button and Silly Optimizer's FPS meter the same rounded look, with the accent marking whatever is active.
+
+**Sharp portraits** (on by default) swaps SillyTavern's small thumbnails for the full-size images as portraits scroll into view, in the lists and in chat. Turn it off if a very large library loads slowly.
+
 ## Like and the Like Tracker
 
 A **Like** button appears on every character in the list and on character messages in chat. Each tap adds one like, so a card can be liked as many times as you want. The button's text and icon can be renamed in settings, and either location can be turned off.
 
-The **Like Tracker** in settings lists every liked card by count, with **+** and **−** to adjust.
+The **Like Tracker** in settings lists every liked card by count, with **+** and **−** to adjust. The character list's sort menu gains **♥ Most liked**.
 
 ## Plays nicely with other extensions
 
