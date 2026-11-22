@@ -790,7 +790,7 @@ body.uix #sfx-toggle {
 
 body.uix:has(#sfx-root:not([hidden])) #chat,
 body.uix #chat {
-    padding-top: 6px;
+    padding-top: 10px;
 }
 
 /* Messages: no boxes. Dialogue is bright, narration recedes, so a snappy
@@ -869,6 +869,29 @@ body.uix #chat .mes[is_user="true"] .name_text {
 body.uix #chat .mes[is_user="true"] .sfx-badges {
     right: auto;
     left: -10px;
+}
+
+/* The chat area sits exactly between Stage's bar and the bottom of the
+   screen. SillyTavern's phone styles size it for their own (shorter) top bar,
+   which can push it past the screen edge or under the bar. */
+body.uix #sheld {
+    position: fixed !important;
+    top: 58px !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: calc(100vh - 58px) !important;
+    height: calc(100dvh - 58px) !important;
+    max-height: none !important;
+    margin: 0 !important;
+}
+
+/* The message box and quick actions stay above the messages, so nothing in
+   the chat can overlap their top edge. */
+body.uix #form_sheld {
+    position: relative;
+    z-index: 31;
+    flex-shrink: 0;
+    margin-top: 0;
 }
 
 /* Quick actions above the message box */
