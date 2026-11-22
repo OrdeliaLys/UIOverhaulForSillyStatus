@@ -268,13 +268,13 @@ export function createStage(h) {
         const likedEl = $('.uix-liked', els.home);
         likedEl.hidden = !liked.length;
         likedEl.innerHTML = liked.length ? `
-            <h2>${esc(s.likeIcon)} Most ${/^like$/i.test(s.likeLabel) ? 'liked' : esc(s.likeLabel.toLowerCase()) + 's'}</h2>
+            <h2>${esc(s.likeIcon)} ${esc(h.mostLabel())}</h2>
             <div class="uix-row">${liked.map(e => `
                 <button type="button" class="uix-mini" data-open="${e.type}:${esc(e.id)}">
                     ${portrait(e, 'uix-mini-pic')}<span>${esc(e.name)}</span><small>${esc(s.likeIcon)} ${e.likes}</small>
                 </button>`).join('')}</div>` : '';
 
-        $('.uix-sorts', els.home).innerHTML = SORTS.map(([k, l]) =>
+        $('.uix-sorts', els.home).innerHTML = SORTS.map(([k, l]) => [k, k === 'liked' ? h.mostLabel() : l]).map(([k, l]) =>
             `<button type="button" class="uix-chip${(s.stageSort ?? 'recent') === k ? ' uix-on' : ''}" data-sort="${k}">${l}</button>`).join('');
 
         const counts = new Map();

@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.0.1';
+const VERSION = '2.0.2';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
@@ -164,10 +164,16 @@ if (!Object.prototype.hasOwnProperty.call(Object.prototype, SORT_FIELD)) {
     });
 }
 
+// "Most liked", following the renamed button: "Fav" → "Most favs".
+function mostLabel() {
+    const label = settings().likeLabel.trim() || 'Like';
+    if (/^like$/i.test(label)) return 'Most liked';
+    const word = label.toLowerCase();
+    return `Most ${/s$/.test(word) ? word : `${word}s`}`;
+}
+
 function sortLabel() {
-    const s = settings();
-    const label = s.likeLabel.trim();
-    return `${s.likeIcon} ${/^like$/i.test(label) ? 'Most liked' : `Most ${label}s`}`;
+    return `${settings().likeIcon} ${mostLabel()}`;
 }
 
 function addSortOption() {
@@ -312,6 +318,7 @@ const stage = createStage({
     save,
     escapeHtml,
     likeCount,
+    mostLabel,
     like: (avatar) => setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name, 'tap'),
     fullImageUrl: (src) => fullImageUrl(src),
     reapply: () => {
@@ -526,6 +533,7 @@ function buildSettings() {
             for (const btn of document.querySelectorAll('.uio-like')) paintLike(btn);
             if (k === 'sharp' || k === 'enabled') for (const img of document.querySelectorAll(SHARP_SCOPE)) sharpen(img);
             renderTracker();
+            stage.refresh('cards');
         };
         input.addEventListener(input.type === 'color' ? 'input' : 'change', onChange);
     }
