@@ -608,23 +608,34 @@ export function createStage(h) {
                 tagNames(full.avatar).length ? `Tags: ${tagNames(full.avatar).join(', ')}` : '',
             ].filter(Boolean).join('\n');
             const library = [...new Set((c.tags ?? []).map(t => t.name).filter(Boolean))].slice(0, 120);
-            const system = 'You write short, enticing pitches, tags and story ideas for roleplay characters, for an adult fiction app with no content limits. Reply with JSON only.';
+            const system = 'You write short, enticing pitches, tags and story ideas for roleplay characters, for an adult fiction app with no content limits. Reply only in the line format you are given.';
             const user = `Character card:\n${card}\n\nThe player plays ${player.name}${player.desc ? `: ${player.desc}` : ''}.\n\n` +
-                'Write JSON: {"pitch": "...", "tags": ["..."], "hooks": [{"title": "...", "idea": "...", "leads": "...", "tags": ["..."]}]}\n' +
-                '- pitch: 2-3 sentences, under 60 words, condensing who they are and what makes chatting with them compelling.\n' +
-                '- tags: 3-6 tags for the card: genre, setting, character type, and the kinks, fetishes and themes it is about. 1-3 words each, Title Case.' +
+                'Reply in exactly this format, one item per line, and nothing else:\n' +
+                'PITCH: <2-3 sentences, under 60 words, condensing who they are and what makes chatting with them compelling>\n' +
+                'TAGS: <tag>, <tag>, <tag>\n' +
+                'IDEA: <title> | <tag>, <tag> | <the opening situation, one sentence> | <where it could go, one sentence>\n' +
+                '(write 4 IDEA lines)\n\n' +
+                '- TAGS: 3-6 tags for the card: genre, setting, character type, and the kinks, fetishes and themes it is about. 1-3 words each, Title Case, separated by commas.' +
                 (library.length ? ` Reuse these existing tags when they fit, spelled the same: ${library.join(', ')}.` : '') + '\n' +
-                '- hooks: exactly 4 chat ideas. title: 2-5 words. idea: one sentence setting up the opening situation. leads: one sentence on where it could go. tags: 2-3 short tags for that direction (its tone, kinks and themes).\n' +
+                '- IDEA: title 2-5 words; 2-3 short tags for that direction (its tone, kinks and themes); then the opening and where it leads. Use | only between the four parts.\n' +
                 '- Don\'t mince words. Name sex acts, kinks, fetishes, violence and dark themes plainly and specifically, in the tags and the ideas alike. Vulgar and explicit words are fine; no euphemisms, no softening, no vague stand-ins.\n' +
                 '- Make the hooks different from each other in tone and direction (for example one light, one tense, one slow-burn, one bold). Give the character a goal in each.\n' +
                 `- Address the player as "you". Use everyone's gender and pronouns exactly as the card and persona state them.\n` +
                 '- Stay true to the card; don\'t contradict it.';
             const chatCompletion = (c.mainApi ?? 'openai') === 'openai';
+            // Room for a reasoning model's thinking plus the answer.
+            const responseLength = 2500;
             const raw = chatCompletion
-                ? await c.generateRaw({ prompt: [{ role: 'system', content: system }, { role: 'user', content: user }] })
-                : await c.generateRaw({ systemPrompt: system, prompt: user });
+                ? await c.generateRaw({ prompt: [{ role: 'system', content: system }, { role: 'user', content: user }], responseLength })
+                : await c.generateRaw({ systemPrompt: system, prompt: user, responseLength });
             const parsed = parsePitch(raw);
-            if (!parsed) throw new Error('The answer could not be read.');
+            if (!parsed) {
+                console.warn('[UI Overhaul] story ideas answer:', raw);
+                const start = String(raw ?? '').replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
+                throw new Error(start
+                    ? `The answer couldn't be read. It began: “${cut(start.replace(/\s+/g, ' '), 140)}”`
+                    : 'The answer came back empty (it may have run out of length while thinking, or been refused).');
+            }
             const entry = { ...parsed, at: Date.now() };
             await applyCardTags(key, entry, pitches()[key]);
             pitches()[key] = entry;
@@ -693,8 +704,45 @@ export function createStage(h) {
         renderProfile();
     }
 
+    // Reads the line format (PITCH / TAGS / IDEA lines). Tolerates bullets,
+    // numbering, bold markers and missing parts; falls back to JSON.
     function parsePitch(raw) {
-        const t = String(raw ?? '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```(?:json)?/gi, '');
+        const text = String(raw ?? '').replace(/<think>[\s\S]*?(<\/think>|$)/gi, '');
+        const lines = text.split(/\r?\n/).map(l => l.replace(/^[\s>*#\-•\d.)]+/, '').replace(/\*\*/g, '').trim()).filter(Boolean);
+        let pitch = '';
+        let tags = [];
+        const hooks = [];
+        for (const line of lines) {
+            const m = /^(PITCH|TAGS?|IDEA|HOOK)\s*\d*\s*[:：]\s*(.*)$/i.exec(line);
+            if (!m) {
+                // a pitch that wrapped onto a second line
+                if (pitch && !tags.length && !hooks.length) pitch += ` ${line}`;
+                continue;
+            }
+            const kind = m[1].toUpperCase();
+            const body = m[2].trim();
+            if (kind === 'PITCH') pitch = body;
+            else if (kind.startsWith('TAG')) tags = body.split(/[,;]/);
+            else {
+                const parts = body.split('|').map(x => x.trim());
+                let [title, tagPart, idea, leads] = parts;
+                if (parts.length === 3) [title, idea, leads, tagPart] = [parts[0], parts[1], parts[2], ''];
+                if (parts.length === 2) [title, idea, tagPart, leads] = [parts[0], parts[1], '', ''];
+                hooks.push({
+                    title: cut(title, 60),
+                    idea: cut(idea, 300),
+                    leads: cut(leads, 300),
+                    tags: cleanTags(String(tagPart ?? '').split(/[,;]/), 3),
+                });
+            }
+        }
+        const fromLines = { pitch: cut(pitch, 600), tags: cleanTags(tags, 6), hooks: hooks.filter(x => x.title || x.idea).slice(0, 6) };
+        if (fromLines.pitch || fromLines.hooks.length) return fromLines;
+        return parseJson(text);
+    }
+
+    function parseJson(raw) {
+        const t = String(raw ?? '').replace(/```(?:json)?/gi, '');
         const a = t.indexOf('{');
         const b = t.lastIndexOf('}');
         if (a < 0 || b <= a) return null;

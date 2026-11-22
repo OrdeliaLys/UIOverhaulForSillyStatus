@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.2.0';
+const VERSION = '2.2.1';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
