@@ -12,6 +12,17 @@ https://github.com/OrdeliaLys/UIOverhaulForSillyStatus
 
 Then reload the page. Settings are under **Extensions → UI Overhaul**.
 
+## Stage mode (complete overhaul)
+
+Tick **Complete overhaul (Stage mode)** at the top of the settings to swap SillyTavern's interface for a different app built on top of it. SillyTavern still does all the work underneath; only the way you get around changes.
+
+- **Home**: a portrait-first screen for your cast. *Continue* your current or latest story, recent chats and your most-liked cards in rows, then everyone (groups too) in a grid you can search, sort (Recent, Most liked, Favourites, A–Z, Newest) and filter by tag. Tap your persona at the top to switch who you play; **+** makes, imports or groups characters.
+- **Chat**: full screen with a slim bar showing who you're with, their status effects as rings that fill with each stage (tap for the SillyStatus panel) and a like button. Dialogue reads bright and narration recedes. Above the message box: **Reroll**, **Swipe**, **Continue**, **Write mine**, **OOC** (starts an out-of-character note) and **Text** (starts a `**@you:**` text message). **⋮** holds new chat, history, the character card, author's note, delete and close.
+- **Backstage** (the gear): every SillyTavern menu as a labelled tile. Each opens full screen with a **Back** button.
+- The phone's back button steps back through all of this instead of leaving the page.
+
+Leave it with **Leave Stage mode** at the bottom of Backstage, or untick it under Extensions → UI Overhaul.
+
 ## Designs
 
 Pick a preset to style everything at once, or set each area on its own:

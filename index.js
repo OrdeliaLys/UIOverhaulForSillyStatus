@@ -4,8 +4,18 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '1.2.0';
+const VERSION = '2.0.0';
 const MODULE = 'ui_overhaul';
+
+import { createStage } from './stage.js';
+
+// Stage mode's stylesheet loads only with the module, next to this file.
+(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = new URL('./stage.css', import.meta.url).href;
+    document.head.appendChild(link);
+})();
 
 const STYLES = {
     lists: [['gallery', 'Gallery (portrait tiles)'], ['reader', 'Reader (compact, text-first)'], ['messenger', 'Messenger (contact list)'], ['stock', 'SillyTavern default']],
@@ -28,6 +38,8 @@ const DEFAULTS = {
     likeIcon: '♥',
     likesInList: true,
     likesInChat: true,
+    complete: false,    // Stage mode: the complete overhaul
+    stageSort: 'recent',
     chrome: true,       // restyle the top bar, panel headers and other extensions' buttons
     sharp: true,        // load full-size portraits instead of SillyTavern's small thumbnails
     likes: {},       // avatar file -> count
@@ -66,9 +78,15 @@ function apply() {
     const s = settings();
     const body = document.body;
     for (const cls of [...body.classList]) if (cls.startsWith('uio-')) body.classList.remove(cls);
-    if (!s.enabled) return;
-    body.classList.add('uio-on', `uio-chars-${s.charStyle}`, `uio-personas-${s.personaStyle}`, `uio-chat-${s.chatStyle}`);
-    if (s.chrome) body.classList.add('uio-chrome');
+    if (!s.enabled) {
+        stage.disable();
+        return;
+    }
+    const chatStyle = s.complete ? 'stage' : s.chatStyle;
+    body.classList.add('uio-on', `uio-chars-${s.charStyle}`, `uio-personas-${s.personaStyle}`, `uio-chat-${chatStyle}`);
+    if (s.chrome || s.complete) body.classList.add('uio-chrome');
+    if (s.complete) stage.enable();
+    else stage.disable();
     if (!s.likesInList) body.classList.add('uio-no-list-likes');
     if (!s.likesInChat) body.classList.add('uio-no-chat-likes');
     body.style.setProperty('--uio-accent', s.accent);
@@ -192,6 +210,7 @@ function likesChanged(avatar) {
         if (!avatar || btn.dataset.avatar === avatar) paintLike(btn);
     }
     renderTracker();
+    stage.refresh('likes');
     document.dispatchEvent(new CustomEvent('uio:likes', { detail: { avatar: avatar ?? null, count: avatar ? likeCount(avatar) : null } }));
 }
 
@@ -286,6 +305,21 @@ function makeLike(avatar, where) {
     paintLike(btn);
     return btn;
 }
+
+const stage = createStage({
+    ctx,
+    settings,
+    save,
+    escapeHtml,
+    likeCount,
+    like: (avatar) => setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name, 'tap'),
+    fullImageUrl: (src) => fullImageUrl(src),
+    reapply: () => {
+        apply();
+        const box = document.querySelector('#uio-settings [data-k="complete"]');
+        if (box) box.checked = !!settings().complete;
+    },
+});
 
 // Global so other extensions can read or add likes.
 globalThis.UIOverhaul = {
@@ -447,6 +481,7 @@ function buildSettings() {
             </div>
             <div class="inline-drawer-content">
                 <label class="checkbox_label"><input type="checkbox" data-k="enabled"> Enabled</label>
+                <label class="checkbox_label uio-complete"><input type="checkbox" data-k="complete"> <span><b>Complete overhaul (Stage mode)</b><br><small>A different app on top of SillyTavern: a home screen for your cast, a full-screen chat with quick actions, and every menu as a tile in Backstage. Leave it from Backstage or here.</small></span></label>
                 <b>Design</b>
                 <div class="uio-presets">
                     <button type="button" class="menu_button" data-preset="gallery">Gallery</button>
@@ -542,6 +577,12 @@ jQuery(() => {
                 decorateTimer = setTimeout(decorateAll, 80);
             });
         }
+        // Stage mode follows chats, cards and status effects.
+        if (ev.CHAT_CHANGED) eventSource.on(ev.CHAT_CHANGED, () => { stage.refresh('chat'); stage.chatOpened(); });
+        for (const name of ['CHARACTER_PAGE_LOADED', 'CHARACTER_EDITED', 'CHARACTER_DELETED', 'GROUP_UPDATED', 'MESSAGE_RECEIVED', 'MESSAGE_SENT', 'MESSAGE_DELETED']) {
+            if (ev[name]) eventSource.on(ev[name], () => stage.refresh(name === 'MESSAGE_RECEIVED' || name === 'MESSAGE_SENT' || name === 'MESSAGE_DELETED' ? 'bar' : 'cards'));
+        }
+        document.addEventListener('sillystatus:changed', () => stage.refresh('effects'));
     } catch (err) {
         console.error('[UI Overhaul] failed to start', err);
     }

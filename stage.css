@@ -1,0 +1,1238 @@
+/* Stage mode: the complete overhaul. Active only with body.uix.
+   Layering (SillyTavern's menus live inside its top bar, at 3005):
+     chat bar 3001 < home 3002 < backstage 3003 < SillyTavern menus 3005
+     < menu header 3100 < action sheets 3150.
+   Full-screen layers are sized with explicit width and height and placed
+   from the top, because offsets from the bottom collapse on some phones.
+   No backdrop blur and only transform/opacity animations, for phones. */
+
+body.uix {
+    --topBarBlockSize: 58px;
+    --uix-bg: #0e0d12;
+    --uix-panel: #16141c;
+    --uix-card: #1c1a23;
+    --uix-line: rgba(255, 255, 255, 0.08);
+    --uix-text: #ece8f3;
+    --uix-dim: rgba(236, 232, 243, 0.58);
+    --uix-say: #f6f2fb;
+    --uix-accent: var(--uio-accent, #b56cff);
+    --uix-accent-soft: var(--uio-accent-soft, rgba(181, 108, 255, 0.16));
+    --uix-accent-line: var(--uio-accent-line, rgba(181, 108, 255, 0.45));
+}
+
+/* Stage's own pieces are hidden outside Stage mode. */
+body:not(.uix) #uix-home,
+body:not(.uix) #uix-bar,
+body:not(.uix) #uix-backstage,
+body:not(.uix) #uix-sheethead,
+body:not(.uix) #uix-menu,
+body:not(.uix) #uix-quick {
+    display: none !important;
+}
+
+#uix-home *,
+#uix-bar *,
+#uix-backstage *,
+#uix-menu *,
+#uix-quick * {
+    box-sizing: border-box;
+}
+
+body.uix button[class^="uix"],
+body.uix #uix-quick button,
+body.uix .uix-chip {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ===================== SillyTavern's shell, hidden ===================== */
+
+body.uix #top-bar,
+body.uix #top-settings-holder > .drawer > .drawer-toggle {
+    display: none !important;
+}
+
+/* The holder stays (SillyTavern's menus live in it) but takes no space and no taps. */
+body.uix #top-settings-holder {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 0;
+    pointer-events: none;
+}
+
+body.uix #top-settings-holder > .drawer > .drawer-content {
+    pointer-events: auto;
+}
+
+/* Every SillyTavern menu opens as a full-screen sheet under Stage's header. */
+body.uix #top-settings-holder > .drawer > .drawer-content.openDrawer {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100vw !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 64px max(12px, calc((100vw - 760px) / 2)) 28px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--uix-bg) !important;
+    box-shadow: none !important;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+body.uix #top-settings-holder .drag-grabber,
+body.uix #top-settings-holder #lm_button_panel_pin_div,
+body.uix #top-settings-holder #rm_button_panel_pin_div,
+body.uix #top-settings-holder #WI_button_panel_pin_div {
+    display: none !important;
+}
+
+/* ===================== Header over an open menu ===================== */
+
+#uix-sheethead {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 56px;
+    z-index: 3100;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 10px;
+    background: var(--uix-bg);
+    border-bottom: 1px solid var(--uix-line);
+    color: var(--uix-text);
+    box-sizing: border-box;
+}
+
+body.uix.uix-sheet #uix-sheethead {
+    display: flex;
+}
+
+#uix-sheethead > span {
+    width: 80px;
+}
+
+.uix-sheet-title {
+    font-size: 1.05em;
+}
+
+.uix-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 80px;
+    height: 38px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--uix-accent) !important;
+    font-weight: 600 !important;
+}
+
+/* ===================== Home ===================== */
+
+#uix-home {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 3002;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background:
+        radial-gradient(120% 60% at 50% -10%, var(--uix-accent-soft), transparent 60%),
+        var(--uix-bg);
+    color: var(--uix-text);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    transition: opacity 0.22s, transform 0.22s, visibility 0s linear 0.22s;
+}
+
+body.uix.uix-home #uix-home {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 0.22s, transform 0.22s;
+}
+
+/* While home is up, the chat underneath isn't drawn and its effects rest. */
+body.uix.uix-home #sheld,
+body.uix.uix-home #sfx-root,
+body.uix.uix-home #sfx-fx-root,
+body.uix.uix-home #sfx-fx-under {
+    visibility: hidden;
+}
+
+body.uix.uix-home #sfx-fx-root *,
+body.uix.uix-home #sfx-fx-under *,
+body.uix.uix-home #ssb-holder * {
+    animation-play-state: paused !important;
+}
+
+.uix-home-top {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(var(--uix-bg) 70%, transparent);
+}
+
+.uix-wordmark {
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 0.78em;
+    opacity: 0.55;
+}
+
+.uix-persona {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 46vw;
+    height: 40px;
+    padding: 3px 12px 3px 3px;
+    border: 1px solid var(--uix-line);
+    border-radius: 999px;
+    background: var(--uix-card);
+}
+
+.uix-persona img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: top;
+}
+
+.uix-persona span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    font-size: 0.92em;
+}
+
+.uix-persona > .fa-chevron-down {
+    font-size: 0.7em;
+    opacity: 0.5;
+}
+
+.uix-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    font-size: 1.1em;
+    opacity: 0.85;
+}
+
+.uix-icon:active,
+.uix-icon:hover {
+    background: rgba(255, 255, 255, 0.07);
+    opacity: 1;
+}
+
+.uix-home-body {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4px 14px 110px;
+}
+
+.uix-greet {
+    margin: 6px 0 14px;
+    font-size: 1.55em;
+    font-weight: 750;
+    line-height: 1.2;
+    color: var(--uix-text);
+}
+
+#uix-home h2 {
+    margin: 22px 0 10px;
+    font-size: 0.82em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--uix-dim);
+}
+
+/* Continue */
+.uix-hero-card {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: 150px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--uix-accent-line);
+    border-radius: 22px;
+    background: var(--uix-card);
+    text-align: left;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.uix-hero-pic {
+    position: relative;
+    flex: 0 0 38%;
+    max-width: 200px;
+    min-height: 150px;
+    overflow: hidden;
+}
+
+.uix-hero-pic img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uix-hero-pic::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 55%, var(--uix-card));
+}
+
+.uix-hero-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 16px 16px 16px 6px;
+}
+
+.uix-hero-text small {
+    color: var(--uix-dim);
+    font-size: 0.8em;
+}
+
+.uix-hero-text b {
+    font-size: 1.45em;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.uix-hero-meta {
+    font-size: 0.8em;
+    color: var(--uix-dim);
+}
+
+.uix-hero-go {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--uix-accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9em;
+}
+
+/* Horizontal rows of small portraits */
+.uix-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+}
+
+.uix-row::-webkit-scrollbar {
+    display: none;
+}
+
+.uix-mini {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 74px;
+    width: 74px;
+    padding: 0;
+    border: none;
+    background: none;
+    text-align: center;
+}
+
+.uix-mini-pic {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid var(--uix-line);
+    background: var(--uix-card);
+}
+
+.uix-mini-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uix-mini span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.uix-mini small {
+    margin-top: -3px;
+    font-size: 0.7em;
+    color: var(--uix-dim);
+}
+
+/* Search, sort and tags */
+.uix-searchbar {
+    position: relative;
+    margin-top: 24px;
+}
+
+.uix-searchbar i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.uix-search {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px 0 40px;
+    border: 1px solid var(--uix-line);
+    border-radius: 16px;
+    background: var(--uix-card);
+    color: var(--uix-text);
+    font: inherit;
+    outline: none;
+}
+
+.uix-search:focus {
+    border-color: var(--uix-accent-line);
+    box-shadow: 0 0 0 3px var(--uix-accent-soft);
+}
+
+.uix-chips {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.uix-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.uix-chips[hidden] {
+    display: none;
+}
+
+.uix-chip {
+    flex: 0 0 auto;
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid var(--uix-line);
+    border-radius: 999px;
+    background: transparent;
+    font-size: 0.86em !important;
+    white-space: nowrap;
+    color: var(--uix-dim) !important;
+}
+
+.uix-chip.uix-on {
+    border-color: var(--uix-accent-line);
+    background: var(--uix-accent-soft);
+    color: var(--uix-accent) !important;
+    font-weight: 700 !important;
+}
+
+.uix-tagchip {
+    height: 30px;
+    font-size: 0.8em !important;
+}
+
+/* The cast */
+.uix-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-auto-rows: max-content;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.uix-card {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid var(--uix-line);
+    background: var(--uix-card);
+    cursor: pointer;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 220px;
+    transition: transform 0.15s;
+}
+
+.uix-card:active {
+    transform: scale(0.97);
+}
+
+.uix-card.uix-active {
+    border-color: var(--uix-accent);
+    box-shadow: 0 0 0 2px var(--uix-accent-soft);
+}
+
+.uix-card-pic {
+    position: absolute;
+    inset: 0;
+}
+
+.uix-card-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uix-card-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 46px 12px 11px;
+    background: linear-gradient(to bottom, transparent, rgba(8, 7, 11, 0.7) 40%, rgba(8, 7, 11, 0.95));
+}
+
+.uix-card-text b {
+    font-size: 1.02em;
+    line-height: 1.2;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.uix-card-text span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.74em;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.uix-card-text small {
+    font-size: 0.68em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.uix-fav {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: #ffd24a;
+    filter: drop-shadow(0 1px 2px #000);
+}
+
+.uix-cardlike,
+.uix-barlike {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(8, 7, 11, 0.55);
+    color: #fff !important;
+    font-size: 0.85em !important;
+}
+
+.uix-cardlike {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.uix-cardlike.uix-liked,
+.uix-barlike.uix-liked {
+    border-color: var(--uix-accent-line);
+    background: var(--uix-accent-soft);
+    color: var(--uix-accent) !important;
+}
+
+.uix-cardlike b,
+.uix-barlike b {
+    color: #fff;
+}
+
+.uix-group-pic {
+    display: grid;
+    gap: 1px;
+    background: var(--uix-line);
+}
+
+.uix-group-pic.uix-n2 { grid-template-columns: 1fr 1fr; }
+.uix-group-pic.uix-n3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.uix-group-pic.uix-n3 img:first-child { grid-row: span 2; }
+
+.uix-group-pic img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uix-group-pic > i {
+    margin: auto;
+    font-size: 1.6em;
+    opacity: 0.5;
+}
+
+.uix-empty {
+    grid-column: 1 / -1;
+    padding: 40px 0;
+    text-align: center;
+    color: var(--uix-dim);
+}
+
+/* New button: placed from the top so it can't collapse. */
+.uix-fab {
+    position: fixed;
+    top: calc(100vh - 82px);
+    top: calc(100dvh - 82px);
+    left: calc(100vw - 78px);
+    z-index: 3;
+    width: 60px;
+    height: 60px;
+    border: none;
+    border-radius: 20px;
+    background: var(--uix-accent);
+    color: #fff !important;
+    font-size: 1.4em !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+/* ===================== Chat ===================== */
+
+#uix-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 58px;
+    z-index: 3001;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    background: var(--uix-bg);
+    border-bottom: 1px solid var(--uix-line);
+    color: var(--uix-text);
+}
+
+.uix-who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    padding: 0 6px;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    text-align: left;
+}
+
+.uix-who-pic {
+    position: relative;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    overflow: hidden;
+    border-radius: 13px;
+    background: var(--uix-card);
+}
+
+.uix-who-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uix-who > span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.uix-who b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.02em;
+}
+
+.uix-who small {
+    font-size: 0.74em;
+    color: var(--uix-dim);
+}
+
+/* Status effects in the bar: each icon wears a ring showing its stage. */
+.uix-effects {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 40px;
+    padding: 0 6px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+}
+
+.uix-effects[hidden],
+.uix-barlike[hidden] {
+    display: none;
+}
+
+.uix-effects.uix-none {
+    opacity: 0.45;
+    width: 40px;
+    justify-content: center;
+}
+
+.uix-fx {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: conic-gradient(var(--uix-accent) var(--p), rgba(255, 255, 255, 0.12) 0);
+}
+
+.uix-fx > span {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--uix-bg);
+    font-size: 13px;
+    line-height: 1;
+}
+
+.uix-effects small {
+    font-size: 0.72em;
+    color: var(--uix-dim);
+}
+
+/* SillyStatus keeps its panel; its own floating button gives way to the bar. */
+body.uix #sfx-toggle {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.uix:has(#sfx-root:not([hidden])) #chat,
+body.uix #chat {
+    padding-top: 6px;
+}
+
+/* Messages: no boxes. Dialogue is bright, narration recedes, so a snappy
+   back-and-forth reads at a glance. */
+body.uix #chat {
+    --avatar-base-width: 34px;
+    --avatar-base-height: 34px;
+    --avatar-base-border-radius-round: 12px;
+}
+
+body.uix #chat .mes {
+    margin: 0;
+    padding: 12px 12px 10px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.uix #chat .mes .avatar img {
+    border-radius: 12px;
+    object-fit: cover;
+    object-position: center top;
+}
+
+body.uix #chat .mes .mes_text {
+    font-size: 1.02em;
+    line-height: 1.62;
+    color: var(--uix-say);
+}
+
+body.uix #chat .mes .mes_text em,
+body.uix #chat .mes .mes_text i {
+    color: var(--uix-dim);
+}
+
+body.uix #chat .mes .mes_text q,
+body.uix #chat .mes .mes_text q em {
+    color: var(--uix-say);
+    font-style: normal;
+}
+
+body.uix #chat .mes[is_user="false"] .name_text {
+    color: var(--uix-accent);
+    font-weight: 700;
+    font-size: 0.86em;
+    letter-spacing: 0.02em;
+}
+
+body.uix #chat .timestamp {
+    font-size: 0.72em;
+    opacity: 0.4;
+}
+
+body.uix #chat .mes_buttons {
+    opacity: 0.55;
+}
+
+/* Your messages: a bubble on the right. */
+body.uix #chat .mes[is_user="true"] {
+    flex-direction: row-reverse;
+}
+
+body.uix #chat .mes[is_user="true"] .mes_block {
+    margin-left: 34px;
+    padding: 9px 13px 10px;
+    border-radius: 18px 6px 18px 18px;
+    background: var(--uix-accent-soft);
+    border: 1px solid var(--uix-accent-line);
+}
+
+body.uix #chat .mes[is_user="true"] .name_text {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+body.uix #chat .mes[is_user="true"] .sfx-badges {
+    right: auto;
+    left: -10px;
+}
+
+/* Quick actions above the message box */
+#uix-quick {
+    display: flex;
+    gap: 6px;
+    padding: 8px 10px 4px;
+    background: var(--uix-bg);
+    border: 1px solid var(--uix-line);
+    border-bottom: none;
+    border-radius: 22px 22px 0 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    order: 0;
+}
+
+#uix-quick::-webkit-scrollbar {
+    display: none;
+}
+
+#uix-quick button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--uix-line);
+    border-radius: 999px;
+    background: var(--uix-bg);
+    color: var(--uix-text);
+    font-size: 0.82em;
+    white-space: nowrap;
+    opacity: 0.88;
+}
+
+#uix-quick button i {
+    color: var(--uix-accent);
+    font-size: 0.95em;
+}
+
+#uix-quick button:active {
+    transform: scale(0.96);
+}
+
+body.uix[data-generating="true"] #uix-quick {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+body.uix #send_form {
+    border-top: none;
+    border-radius: 0;
+    background-color: var(--uix-bg) !important;
+}
+
+/* The FPS meter moves under the bar so it doesn't cover the quick actions. */
+body.uix #opt-meter {
+    top: 66px;
+    right: 8px;
+}
+
+/* ===================== Backstage ===================== */
+
+#uix-backstage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 3003;
+    overflow-y: auto;
+    padding: 0 0 40px;
+    background: var(--uix-bg);
+    color: var(--uix-text);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(24px);
+    transition: opacity 0.22s, transform 0.22s, visibility 0s linear 0.22s;
+}
+
+#uix-backstage.uix-open {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 0.22s, transform 0.22s;
+}
+
+.uix-sheet-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 10px;
+    background: var(--uix-bg);
+    border-bottom: 1px solid var(--uix-line);
+}
+
+.uix-sheet-top > span {
+    width: 40px;
+}
+
+.uix-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 16px 14px;
+}
+
+.uix-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-height: 118px;
+    padding: 14px;
+    border: 1px solid var(--uix-line);
+    border-radius: 18px;
+    background: var(--uix-card);
+    text-align: left;
+}
+
+.uix-tile i {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    margin-bottom: 6px;
+    border-radius: 12px;
+    background: var(--uix-accent-soft);
+    color: var(--uix-accent);
+    font-size: 1.05em;
+}
+
+.uix-tile b {
+    font-size: 1em;
+}
+
+.uix-tile small {
+    font-size: 0.76em;
+    line-height: 1.3;
+    color: var(--uix-dim);
+}
+
+.uix-tile:active {
+    transform: scale(0.97);
+}
+
+.uix-exit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 28px);
+    max-width: 732px;
+    height: 48px;
+    margin: 8px auto 0;
+    border: 1px solid var(--uix-line);
+    border-radius: 16px;
+    background: transparent;
+    color: var(--uix-dim) !important;
+}
+
+.uix-foot {
+    display: block;
+    max-width: 732px;
+    margin: 10px auto 0;
+    padding: 0 16px;
+    text-align: center;
+    font-size: 0.75em;
+    color: var(--uix-dim);
+}
+
+/* ===================== Action sheets ===================== */
+/* A full-screen layer whose panel sits at the bottom through flexbox, not
+   bottom offsets. */
+
+#uix-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 3150;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+#uix-menu.uix-open {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.uix-scrim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+#uix-menu.uix-open .uix-scrim {
+    opacity: 1;
+}
+
+.uix-menu-panel {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    max-height: 82vh;
+    max-height: 82dvh;
+    margin: 0 auto;
+    overflow-y: auto;
+    padding: 8px 10px calc(14px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    border: 1px solid var(--uix-line);
+    border-bottom: none;
+    background: var(--uix-panel);
+    color: var(--uix-text);
+    transform: translateY(100%);
+    transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#uix-menu.uix-open .uix-menu-panel {
+    transform: none;
+}
+
+.uix-grab {
+    width: 40px;
+    height: 4px;
+    margin: 2px auto 10px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.uix-menu-title {
+    display: block;
+    padding: 0 8px 8px;
+    font-size: 1.05em;
+}
+
+.uix-menu-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 54px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    text-align: left;
+}
+
+.uix-menu-row:active,
+.uix-menu-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.uix-menu-row > i {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--uix-accent-soft);
+    color: var(--uix-accent);
+}
+
+.uix-menu-row > span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.uix-menu-row small {
+    font-size: 0.78em;
+    color: var(--uix-dim);
+}
+
+.uix-menu-row.uix-danger > i {
+    background: rgba(224, 82, 76, 0.16);
+    color: #ff7a74;
+}
+
+/* Persona picker */
+.uix-personas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    padding: 0 4px 10px;
+}
+
+.uix-pers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 6px;
+    border: 1px solid var(--uix-line);
+    border-radius: 16px;
+    background: var(--uix-card);
+    text-align: center;
+}
+
+.uix-pers.uix-on {
+    border-color: var(--uix-accent);
+    background: var(--uix-accent-soft);
+}
+
+.uix-pers img {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uix-pers b {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.86em;
+}
+
+.uix-pers small {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.68em;
+    line-height: 1.25;
+    color: var(--uix-dim);
+}
+
+/* Settings checkbox for this mode */
+#uio-settings .uio-complete {
+    align-items: flex-start !important;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--uio-accent-line, rgba(181, 108, 255, 0.45));
+    background: var(--uio-accent-soft, rgba(181, 108, 255, 0.12));
+}
+
+#uio-settings .uio-complete input {
+    margin-top: 3px;
+}
+
+/* Undo bar sits under Stage's bar */
+body.uix #uio-snack {
+    top: 68px;
+}
