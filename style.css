@@ -1,0 +1,626 @@
+/* UI Overhaul for SillyTavern
+   Everything is scoped under body classes (uio-chars-*, uio-personas-*,
+   uio-chat-*), so turning a style off returns SillyTavern's own look. Nothing
+   here moves elements, sets transforms on messages, or hides other
+   extensions' additions (SillyStatus badges and chips, the scene backdrop). */
+
+body.uio-on {
+    --uio-accent: #b56cff;
+    --uio-accent-soft: rgba(181, 108, 255, 0.16);
+    --uio-accent-soft: color-mix(in srgb, var(--uio-accent) 16%, transparent);
+    --uio-accent-line: rgba(181, 108, 255, 0.45);
+    --uio-accent-line: color-mix(in srgb, var(--uio-accent) 45%, transparent);
+    --uio-card: rgba(255, 255, 255, 0.045);
+    --uio-line: rgba(255, 255, 255, 0.09);
+    --uio-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ===================== Like button ===================== */
+
+.uio-like {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 30px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--uio-line);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--SmartThemeBodyColor, #ddd);
+    font: inherit;
+    font-size: 0.8em;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.uio-like.uio-liked {
+    border-color: var(--uio-accent-line);
+    background: var(--uio-accent-soft);
+}
+
+.uio-like.uio-liked .uio-like-icon {
+    color: var(--uio-accent);
+}
+
+.uio-like-count {
+    font-weight: 700;
+}
+
+.uio-like.uio-pop {
+    animation: uio-pop 0.35s ease-out;
+}
+
+@keyframes uio-pop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+
+body:not(.uio-on) .uio-like,
+body.uio-no-list-likes .uio-like-list,
+body.uio-no-chat-likes .uio-like-chat {
+    display: none !important;
+}
+
+/* In chat the button is small: icon and count only. */
+.uio-like-chat {
+    min-height: 24px;
+    padding: 0 8px;
+    margin-left: 8px;
+    align-self: center;
+}
+
+.uio-like-chat .uio-like-label {
+    display: none;
+}
+
+/* ===================== Shared list pieces ===================== */
+/* The same rules serve the character list and the persona list. */
+
+body.uio-chars-gallery #rm_print_characters_block,
+body.uio-chars-reader #rm_print_characters_block,
+body.uio-chars-messenger #rm_print_characters_block,
+body.uio-personas-gallery #user_avatar_block,
+body.uio-personas-reader #user_avatar_block,
+body.uio-personas-messenger #user_avatar_block {
+    --avatar-base-border-radius: 0px;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .character_select_container,
+body.uio-chars-reader #rm_print_characters_block .character_select_container,
+body.uio-chars-messenger #rm_print_characters_block .character_select_container,
+body.uio-personas-gallery #user_avatar_block .character_select_container,
+body.uio-personas-reader #user_avatar_block .character_select_container,
+body.uio-personas-messenger #user_avatar_block .character_select_container {
+    min-width: 0;
+}
+
+/* ===================== Gallery lists: portrait tiles ===================== */
+
+body.uio-chars-gallery #rm_print_characters_block,
+body.uio-personas-gallery #user_avatar_block {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    /* Rows take the tiles' full height; without this the list's fixed
+       height lets the grid squeeze rows and tiles overlap. */
+    grid-auto-rows: max-content;
+    gap: 10px;
+    align-content: start;
+    align-items: start;
+    padding: 4px 2px 12px;
+}
+
+/* Groups, folders and notices span the whole row. */
+body.uio-chars-gallery #rm_print_characters_block > :not(.character_select),
+body.uio-personas-gallery #user_avatar_block > :not(.avatar-container) {
+    grid-column: 1 / -1;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .character_select,
+body.uio-personas-gallery #user_avatar_block .avatar-container {
+    position: relative;
+    display: block !important;
+    width: auto !important;
+    aspect-ratio: 3 / 4;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #0d0d10;
+    border: 1px solid var(--uio-line);
+    box-shadow: var(--uio-shadow);
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .character_select:hover,
+body.uio-personas-gallery #user_avatar_block .avatar-container:hover {
+    border-color: var(--uio-accent-line);
+    transform: translateY(-2px);
+}
+
+body.uio-personas-gallery #user_avatar_block .avatar-container.selected {
+    border-color: var(--uio-accent);
+    box-shadow: 0 0 0 2px var(--uio-accent-soft), var(--uio-shadow);
+}
+
+body.uio-chars-gallery #rm_print_characters_block .character_select .avatar,
+body.uio-personas-gallery #user_avatar_block .avatar-container .avatar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .character_select .avatar img,
+body.uio-personas-gallery #user_avatar_block .avatar-container .avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 0 !important;
+    border: none !important;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .character_select_container,
+body.uio-personas-gallery #user_avatar_block .character_select_container {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 3px;
+    padding: 44px 10px 9px;
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.62) 38%, rgba(0, 0, 0, 0.93));
+}
+
+body.uio-chars-gallery #rm_print_characters_block .ch_name,
+body.uio-personas-gallery #user_avatar_block .ch_name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.02em;
+    line-height: 1.2;
+    text-shadow: 0 1px 3px #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .ch_additional_info,
+body.uio-chars-gallery #rm_print_characters_block .character_version,
+body.uio-chars-gallery #rm_print_characters_block .ch_avatar_url,
+body.uio-personas-gallery #user_avatar_block .ch_additional_info {
+    display: none !important;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .ch_description,
+body.uio-personas-gallery #user_avatar_block .ch_description {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    font-size: 0.75em;
+    line-height: 1.3;
+    max-height: 2.6em;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+body.uio-chars-gallery #rm_print_characters_block .tags {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 3px;
+    overflow: hidden;
+    max-height: 1.6em;
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent);
+    mask-image: linear-gradient(to right, black 80%, transparent);
+}
+
+body.uio-chars-gallery #rm_print_characters_block .tag {
+    font-size: 0.65em;
+    padding: 1px 6px;
+    margin: 0;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    white-space: nowrap;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .ch_fav_icon {
+    position: absolute;
+    top: 9px;
+    left: 9px;
+    color: #ffd24a;
+    filter: drop-shadow(0 1px 2px #000);
+}
+
+body.uio-personas-gallery #user_avatar_block .avatar_container_states {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+}
+
+/* Like sits in the tile's top-right corner. */
+body.uio-chars-gallery #rm_print_characters_block .uio-like-list {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    min-height: 28px;
+    padding: 0 9px;
+    background: rgba(0, 0, 0, 0.55);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+body.uio-chars-gallery #rm_print_characters_block .uio-like-list .uio-like-label {
+    display: none;
+}
+
+/* ===================== Reader lists: compact, text-first ===================== */
+
+body.uio-chars-reader #rm_print_characters_block,
+body.uio-personas-reader #user_avatar_block {
+    --avatar-base-width: 42px;
+    --avatar-base-height: 42px;
+    flex-direction: column;
+    flex-wrap: nowrap !important;
+}
+
+body.uio-chars-reader #rm_print_characters_block .character_select,
+body.uio-personas-reader #user_avatar_block .avatar-container {
+    align-items: flex-start !important;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 6px !important;
+    margin: 0 !important;
+    border-radius: 0;
+    border-bottom: 1px solid var(--uio-line);
+}
+
+body.uio-chars-reader #rm_print_characters_block .avatar,
+body.uio-personas-reader #user_avatar_block .avatar,
+body.uio-chars-reader #rm_print_characters_block .avatar img,
+body.uio-personas-reader #user_avatar_block .avatar img {
+    border-radius: 10px !important;
+    object-fit: cover;
+}
+
+body.uio-chars-reader #rm_print_characters_block .character_select_container,
+body.uio-personas-reader #user_avatar_block .character_select_container {
+    flex: 1;
+    width: auto !important;
+}
+
+body.uio-chars-reader #rm_print_characters_block .ch_name,
+body.uio-personas-reader #user_avatar_block .ch_name {
+    font-weight: 600;
+}
+
+body.uio-chars-reader #rm_print_characters_block .ch_description,
+body.uio-personas-reader #user_avatar_block .ch_description {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    font-size: 0.86em;
+    line-height: 1.4;
+    opacity: 0.8;
+}
+
+body.uio-chars-reader #rm_print_characters_block .tag {
+    background: none !important;
+    border: none !important;
+    padding: 0 6px 0 0 !important;
+    margin: 0;
+    font-size: 0.76em;
+    opacity: 0.6;
+}
+
+body.uio-chars-reader #rm_print_characters_block .tag .tag_name::before {
+    content: '#';
+}
+
+body.uio-chars-reader #rm_print_characters_block .uio-like-list {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
+/* ===================== Messenger lists: contact list ===================== */
+
+body.uio-chars-messenger #rm_print_characters_block,
+body.uio-personas-messenger #user_avatar_block {
+    --avatar-base-width: 54px;
+    --avatar-base-height: 54px;
+    flex-direction: column;
+    flex-wrap: nowrap !important;
+    gap: 2px;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .character_select,
+body.uio-personas-messenger #user_avatar_block .avatar-container {
+    align-items: center !important;
+    gap: 12px;
+    width: 100%;
+    padding: 9px 8px !important;
+    margin: 0 !important;
+    border-radius: 14px;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .character_select:hover,
+body.uio-personas-messenger #user_avatar_block .avatar-container:hover,
+body.uio-personas-messenger #user_avatar_block .avatar-container.selected {
+    background: var(--uio-accent-soft);
+}
+
+body.uio-chars-messenger #rm_print_characters_block .avatar,
+body.uio-personas-messenger #user_avatar_block .avatar {
+    border-radius: 50% !important;
+    box-shadow: 0 0 0 2px var(--uio-line);
+    flex: 0 0 auto;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .avatar img,
+body.uio-personas-messenger #user_avatar_block .avatar img {
+    border-radius: 50% !important;
+    object-fit: cover;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .character_select_container,
+body.uio-personas-messenger #user_avatar_block .character_select_container {
+    flex: 1;
+    width: auto !important;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .ch_name,
+body.uio-personas-messenger #user_avatar_block .ch_name {
+    font-weight: 700;
+    font-size: 1.04em;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .ch_description,
+body.uio-personas-messenger #user_avatar_block .ch_description {
+    display: block !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.86em;
+    opacity: 0.68;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .tags {
+    display: none !important;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .uio-like-list {
+    flex: 0 0 auto;
+}
+
+body.uio-chars-messenger #rm_print_characters_block .uio-like-list .uio-like-label {
+    display: none;
+}
+
+/* ===================== Chat: Cards ===================== */
+/* Soft cards with roomy avatars. Card backgrounds stay see-through so the
+   scene backdrop and screen effects show behind them. */
+
+body.uio-chat-cards #chat {
+    --avatar-base-width: 50px;
+    --avatar-base-height: 50px;
+    --avatar-base-border-radius-round: 14px;
+}
+
+body.uio-chat-cards #chat .mes {
+    margin: 4px 0 10px;
+    padding: 12px 10px 10px;
+    border-radius: 16px;
+    background: var(--uio-card);
+    border: 1px solid var(--uio-line);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+body.uio-chat-cards #chat .mes[is_user="true"] {
+    background: var(--uio-accent-soft);
+    border-color: var(--uio-accent-line);
+}
+
+body.uio-chat-cards #chat .mes .avatar img {
+    object-fit: cover;
+}
+
+body.uio-chat-cards #chat .mes[is_user="false"] .name_text {
+    color: var(--uio-accent);
+    font-weight: 700;
+}
+
+body.uio-chat-cards #chat .mes_text {
+    line-height: 1.55;
+}
+
+/* ===================== Chat: Reader ===================== */
+/* No boxes, a centred reading column, small avatars, book-like rhythm. */
+
+body.uio-chat-reader #chat {
+    --avatar-base-width: 30px;
+    --avatar-base-height: 30px;
+}
+
+body.uio-chat-reader #chat .mes {
+    max-width: 46em;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 14px 6px 16px;
+    background: transparent;
+    border-bottom: 1px solid var(--uio-line);
+}
+
+body.uio-chat-reader #chat .mes_text {
+    font-size: 1.04em;
+    line-height: 1.72;
+}
+
+body.uio-chat-reader #chat .name_text {
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--uio-accent);
+}
+
+body.uio-chat-reader #chat .mes[is_user="true"] .name_text {
+    color: inherit;
+    opacity: 0.75;
+}
+
+body.uio-chat-reader #chat .timestamp {
+    opacity: 0.45;
+}
+
+/* ===================== Chat: Bubbles ===================== */
+/* Speech bubbles; your messages on the right in the accent colour. */
+
+body.uio-chat-bubbles #chat {
+    --avatar-base-width: 34px;
+    --avatar-base-height: 34px;
+}
+
+body.uio-chat-bubbles #chat .mes {
+    align-items: flex-end !important;
+    padding: 4px 6px;
+    margin: 2px 0 6px;
+    background: transparent;
+}
+
+body.uio-chat-bubbles #chat .mes .mes_block {
+    padding: 8px 12px 10px;
+    margin-right: 26px;
+    border-radius: 18px 18px 18px 6px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--uio-line);
+}
+
+body.uio-chat-bubbles #chat .mes[is_user="true"] {
+    flex-direction: row-reverse;
+}
+
+body.uio-chat-bubbles #chat .mes[is_user="true"] .mes_block {
+    margin-right: 0;
+    margin-left: 26px;
+    border-radius: 18px 18px 6px 18px;
+    background: var(--uio-accent-soft);
+    border-color: var(--uio-accent-line);
+}
+
+body.uio-chat-bubbles #chat .mes .ch_name {
+    font-size: 0.82em;
+    opacity: 0.85;
+}
+
+body.uio-chat-bubbles #chat .mes .avatar img {
+    object-fit: cover;
+}
+
+/* ===================== Settings ===================== */
+
+#uio-settings label:not(.checkbox_label) {
+    display: block;
+    margin: 6px 0;
+}
+
+#uio-settings .checkbox_label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.uio-presets {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 6px 0 2px;
+}
+
+.uio-two {
+    display: flex;
+    gap: 8px;
+}
+
+.uio-two label {
+    flex: 1;
+}
+
+.uio-muted {
+    display: block;
+    opacity: 0.65;
+}
+
+.uio-track-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--uio-line, rgba(255, 255, 255, 0.09));
+}
+
+.uio-track-row img {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: 0 0 34px;
+}
+
+.uio-track-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.uio-track-count {
+    white-space: nowrap;
+}
+
+.uio-track-row .menu_button {
+    margin: 0;
+    min-width: 34px;
+    min-height: 32px;
+    padding: 2px 8px;
+}
+
+/* SillyTavern's own list look: the button sits at the end of the row. */
+body.uio-chars-stock #rm_print_characters_block .uio-like-list {
+    flex: 0 0 auto;
+    align-self: center;
+    margin-left: 6px;
+}
+
+/* Name and timestamp get a little space in every chat style. */
+body.uio-chat-cards #chat .ch_name .alignItemsBaseline,
+body.uio-chat-reader #chat .ch_name .alignItemsBaseline,
+body.uio-chat-bubbles #chat .ch_name .alignItemsBaseline {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* Bubbles: your avatar sits on the right, so SillyStatus badges go on its
+   inner side instead of poking off the screen edge. */
+body.uio-chat-bubbles #chat .mes[is_user="true"] .sfx-badges {
+    right: auto;
+    left: -10px;
+}
