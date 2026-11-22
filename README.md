@@ -24,7 +24,7 @@ Pick a preset to style everything at once, or set each area on its own:
 
 Any area can also be set to **SillyTavern default**. The **Accent colour** tints highlights, names, your bubbles and liked buttons.
 
-**Matching chrome** (on by default) gives the top bar tabs, the character panel's header (buttons, sort menu, search, filter row, pagination), SillyStatus's status button and Silly Optimizer's FPS meter the same rounded look, with the accent marking whatever is active.
+**Matching chrome** (on by default) gives everything around the chat one rounded look, with the accent marking whatever is active: the top bar tabs, every menu they open (buttons, fields, checkboxes, sliders and section headers), the character panel's header, the send bar with its ☰ and ✨ menus, SillyStatus's status button and Silly Optimizer's FPS meter.
 
 **Sharp portraits** (on by default) swaps SillyTavern's small thumbnails for the full-size images as portraits scroll into view, in the lists and in chat. Turn it off if a very large library loads slowly.
 
@@ -32,7 +32,7 @@ Any area can also be set to **SillyTavern default**. The **Accent colour** tints
 
 A **Like** button appears on every character in the list and on character messages in chat. Each tap adds one like, so a card can be liked as many times as you want. The button's text and icon can be renamed in settings, and either location can be turned off.
 
-The **Like Tracker** in settings lists every liked card by count, with **+** and **−** to adjust. The character list's sort menu gains **♥ Most liked**.
+Every change shows a small bar with **Undo** for a few seconds (quick repeated taps on one card undo together). The **Like Tracker** in settings lists every liked card by count, with **+**, **−** and a reset button per card, plus **Undo** and **Reset all** (asks first, and can be undone). The character list's sort menu gains **♥ Most liked**.
 
 ## Plays nicely with other extensions
 
@@ -41,4 +41,4 @@ The **Like Tracker** in settings lists every liked card by count, with **+** and
 - SillyStatus portrait badges and change chips keep their place in every style (in Bubbles, badges on your right-hand avatar move to its inner side).
 - No transforms on messages, so SillyStatus's woozy sway and Silly Optimizer's off-screen skipping keep working.
 
-For other extension authors: likes are available as `globalThis.UIOverhaul.getLikes(avatarFile?)` and `UIOverhaul.like(avatarFile, by)`, and a `uio:likes` event fires on `document` when a count changes. The active styles are body classes (`uio-chars-*`, `uio-personas-*`, `uio-chat-*`).
+For other extension authors: likes are available as `globalThis.UIOverhaul.getLikes(avatarFile?)` `UIOverhaul.like(avatarFile, by)`, `UIOverhaul.reset(avatarFile?)` and `UIOverhaul.undo()`, and a `uio:likes` event fires on `document` when a count changes. The active styles are body classes (`uio-chars-*`, `uio-personas-*`, `uio-chat-*`).

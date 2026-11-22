@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const MODULE = 'ui_overhaul';
 
 const STYLES = {
@@ -176,18 +176,94 @@ function likeCount(avatar) {
     return Number(settings().likes[avatar] ?? 0);
 }
 
-function setLikes(avatar, count, name) {
+// Every change can be undone: the counts from before it are kept until the
+// next change. Quick repeated taps on the same card count as one change, so
+// Undo takes back the whole burst.
+let lastChange = null; // { before: {likes, likeNames}, avatar, kind, at }
+
+function snapshot() {
     const s = settings();
+    return { likes: { ...s.likes }, likeNames: { ...s.likeNames } };
+}
+
+function likesChanged(avatar) {
+    save();
+    for (const btn of document.querySelectorAll('.uio-like')) {
+        if (!avatar || btn.dataset.avatar === avatar) paintLike(btn);
+    }
+    renderTracker();
+    document.dispatchEvent(new CustomEvent('uio:likes', { detail: { avatar: avatar ?? null, count: avatar ? likeCount(avatar) : null } }));
+}
+
+function remember(kind, avatar) {
+    const now = Date.now();
+    if (kind === 'tap' && lastChange?.kind === 'tap' && lastChange.avatar === avatar && now - lastChange.at < 6000) {
+        lastChange.at = now; // same burst: keep the counts from before it began
+        return;
+    }
+    lastChange = { before: snapshot(), avatar, kind, at: now };
+}
+
+function displayName(avatar) {
+    return characterByAvatar(avatar)?.name ?? settings().likeNames[avatar] ?? String(avatar).replace(/\.png$/i, '');
+}
+
+function setLikes(avatar, count, name, kind = 'edit') {
+    const s = settings();
+    remember(kind, avatar);
     const n = Math.max(0, Math.round(count));
     if (n) s.likes[avatar] = n;
     else delete s.likes[avatar];
     if (name) s.likeNames[avatar] = name;
-    save();
-    for (const btn of document.querySelectorAll('.uio-like')) {
-        if (btn.dataset.avatar === avatar) paintLike(btn);
+    likesChanged(avatar);
+    const label = s.likeLabel;
+    const message = kind === 'reset'
+        ? `${displayName(avatar)}: ${label.toLowerCase()}s reset`
+        : `${s.likeIcon} ${displayName(avatar)}: ${n}`;
+    snack(message, true);
+}
+
+function resetAll() {
+    const s = settings();
+    if (!Object.keys(s.likes).length) return;
+    remember('reset-all', null);
+    s.likes = {};
+    likesChanged(null);
+    snack(`All ${s.likeLabel.toLowerCase()}s reset`, true);
+}
+
+function undo() {
+    if (!lastChange) return false;
+    const s = settings();
+    const { before, avatar } = lastChange;
+    lastChange = null;
+    s.likes = before.likes;
+    s.likeNames = before.likeNames;
+    likesChanged(avatar);
+    snack('Undone', false);
+    return true;
+}
+
+// A small bar under the top bar: what changed, with an Undo button.
+let snackTimer = null;
+function snack(message, canUndo) {
+    let bar = document.getElementById('uio-snack');
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'uio-snack';
+        bar.setAttribute('role', 'status');
+        bar.innerHTML = '<span class="uio-snack-text"></span><button type="button" class="uio-snack-undo">Undo</button>';
+        bar.querySelector('button').addEventListener('click', (event) => {
+            event.stopPropagation();
+            undo();
+        });
+        document.body.appendChild(bar);
     }
-    renderTracker();
-    document.dispatchEvent(new CustomEvent('uio:likes', { detail: { avatar, count: n } }));
+    bar.querySelector('.uio-snack-text').textContent = message;
+    bar.querySelector('button').hidden = !canUndo;
+    bar.classList.add('uio-show');
+    clearTimeout(snackTimer);
+    snackTimer = setTimeout(() => bar.classList.remove('uio-show'), canUndo ? 5000 : 1600);
 }
 
 function characterByAvatar(avatar) {
@@ -216,6 +292,8 @@ globalThis.UIOverhaul = {
     version: VERSION,
     getLikes: (avatar) => (avatar ? likeCount(avatar) : { ...settings().likes }),
     like: (avatar, by = 1) => setLikes(avatar, likeCount(avatar) + by, characterByAvatar(avatar)?.name),
+    reset: (avatar) => (avatar ? setLikes(avatar, 0, null, 'reset') : resetAll()),
+    undo,
 };
 
 // ---------- decorating SillyTavern's lists and chat ----------
@@ -324,7 +402,7 @@ document.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
     const avatar = btn.dataset.avatar;
-    setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name);
+    setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name, 'tap');
     btn.classList.remove('uio-pop');
     void btn.offsetWidth;
     btn.classList.add('uio-pop');
@@ -342,13 +420,14 @@ function renderTracker() {
         return;
     }
     box.innerHTML = rows.map(([avatar, n]) => {
-        const name = characterByAvatar(avatar)?.name ?? s.likeNames[avatar] ?? avatar.replace(/\.png$/i, '');
+        const name = displayName(avatar);
         return `<div class="uio-track-row" data-avatar="${escapeHtml(avatar)}">
             <img src="${escapeHtml(thumb(avatar))}" alt="" loading="lazy">
             <span class="uio-track-name">${escapeHtml(name)}</span>
             <b class="uio-track-count">${escapeHtml(s.likeIcon)} ${n}</b>
             <button type="button" class="menu_button" data-t="-1" title="Remove one">−</button>
             <button type="button" class="menu_button" data-t="1" title="Add one">+</button>
+            <button type="button" class="menu_button" data-t="reset" title="Reset to zero"><i class="fa-solid fa-rotate-left"></i></button>
         </div>`;
     }).join('');
 }
@@ -389,7 +468,11 @@ function buildSettings() {
                 </div>
                 <label class="checkbox_label"><input type="checkbox" data-k="likesInList"> Show on the character list</label>
                 <label class="checkbox_label"><input type="checkbox" data-k="likesInChat"> Show on character messages in chat</label>
-                <b>Like Tracker</b>
+                <div class="uio-tracker-head">
+                    <b>Like Tracker</b>
+                    <button type="button" class="menu_button" id="uio-undo" title="Undo the last change"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+                    <button type="button" class="menu_button" id="uio-reset-all" title="Set every count to zero"><i class="fa-solid fa-trash-can"></i> Reset all</button>
+                </div>
                 <div id="uio-tracker"></div>
             </div>
         </div>`;
@@ -423,7 +506,22 @@ function buildSettings() {
         const btn = event.target.closest('[data-t]');
         if (!btn) return;
         const avatar = btn.closest('[data-avatar]').dataset.avatar;
-        setLikes(avatar, likeCount(avatar) + Number(btn.dataset.t), characterByAvatar(avatar)?.name);
+        if (btn.dataset.t === 'reset') setLikes(avatar, 0, null, 'reset');
+        else setLikes(avatar, likeCount(avatar) + Number(btn.dataset.t), characterByAvatar(avatar)?.name);
+    });
+    wrap.querySelector('#uio-undo').addEventListener('click', () => {
+        if (!undo()) snack('Nothing to undo', false);
+    });
+    wrap.querySelector('#uio-reset-all').addEventListener('click', async () => {
+        const s = settings();
+        const total = Object.values(s.likes).reduce((a, b) => a + b, 0);
+        if (!total) return snack(`No ${s.likeLabel.toLowerCase()}s to reset`, false);
+        const question = `Reset all ${total} ${s.likeLabel.toLowerCase()}s on ${Object.keys(s.likes).length} cards? You can still undo it right after.`;
+        const c = ctx();
+        const ok = c.callGenericPopup && c.POPUP_TYPE
+            ? await c.callGenericPopup(question, c.POPUP_TYPE.CONFIRM)
+            : confirm(question);
+        if (ok) resetAll();
     });
     renderTracker();
 }

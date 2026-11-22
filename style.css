@@ -651,12 +651,23 @@ body.uio-chrome #top-bar {
     border-bottom: 1px solid var(--uio-line);
 }
 
+/* Every tab is the same fixed box, so the open one is only recoloured and
+   never grows, shifts or pokes out of the bar. */
 body.uio-chrome #top-settings-holder .drawer-icon {
-    font-size: calc(var(--topBarIconSize) * 0.78);
-    padding: 6px 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: min(44px, 10.5vw);
+    height: calc(var(--topBarBlockSize) - 8px);
+    padding: 0;
+    margin: 0;
+    font-size: calc(var(--topBarIconSize) * 0.68);
+    line-height: 1;
     border-radius: var(--uio-radius);
     background: transparent;
     color: var(--SmartThemeBodyColor, #ddd);
+    box-shadow: none;
     transition: background-color 0.2s, color 0.2s, opacity 0.2s;
 }
 
@@ -992,4 +1003,412 @@ body.uio-chrome #opt-meter.opt-ok,
 body.uio-chrome #opt-meter.opt-meh,
 body.uio-chrome #opt-meter.opt-bad {
     color: var(--SmartThemeBodyColor, #ddd);
+}
+
+
+/* ===================== Chrome: every top-bar menu ===================== */
+/* A shared look for SillyTavern's building blocks wherever they appear:
+   buttons, fields, checkboxes, sliders and section headers. Sizes stay close
+   to SillyTavern's own so no layout breaks; corners, fills and the accent
+   change. */
+
+body.uio-chrome #top-settings-holder .drawer-content {
+    border-color: var(--uio-line);
+    border-radius: 0 0 16px 16px;
+}
+
+/* Panel titles */
+body.uio-chrome #top-settings-holder .drawer-content h3,
+body.uio-chrome #top-settings-holder .drawer-content h4 {
+    letter-spacing: 0.01em;
+}
+
+/* "Click slider numbers to input manually" floated on top of the first
+   preset header; it now sits in the flow as a quiet hint. */
+body.uio-chrome #clickSlidersTips {
+    position: static;
+    width: auto;
+    margin: 2px 0 6px;
+    font-size: 0.78em;
+    opacity: 0.5;
+}
+
+/* Buttons */
+body.uio-chrome .menu_button {
+    border-radius: 10px;
+    border-color: transparent;
+    background-color: var(--uio-chip);
+    filter: none;
+    min-height: 30px;
+    padding: 3px 6px;
+    gap: 6px;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+body.uio-chrome .menu_button:not(.disabled):not([disabled]):hover,
+body.uio-chrome .menu_button:not(.disabled):not([disabled]).active {
+    background-color: var(--uio-chip-hover);
+}
+
+body.uio-chrome .menu_button.toggleEnabled,
+body.uio-chrome .menu_button.active:not(.redWarningBG) {
+    background-color: var(--uio-accent-soft);
+    border-color: var(--uio-accent-line);
+    color: var(--uio-accent);
+}
+
+body.uio-chrome .menu_button.redWarningBG,
+body.uio-chrome .menu_button.caution {
+    background-color: rgba(224, 82, 76, 0.18);
+    border-color: rgba(224, 82, 76, 0.45);
+}
+
+/* Inside section headers and button rows, buttons stay compact so rows that
+   fit in SillyTavern still fit. */
+body.uio-chrome .standoutHeader .menu_button,
+body.uio-chrome .menu_button.fa-solid:not(:has(*)):empty {
+    min-height: 30px;
+    padding: 3px 7px;
+}
+
+body.uio-chrome .standoutHeader .menu_button {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Fields */
+body.uio-chrome .text_pole,
+body.uio-chrome .select2-container .select2-selection {
+    border-radius: 10px;
+    border-color: var(--uio-line);
+    background-color: rgba(0, 0, 0, 0.22);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+body.uio-chrome input.text_pole,
+body.uio-chrome select.text_pole {
+    min-height: 34px;
+    padding-left: 10px;
+}
+
+body.uio-chrome textarea.text_pole {
+    padding: 8px 10px;
+}
+
+body.uio-chrome .text_pole:focus,
+body.uio-chrome .select2-container--focus .select2-selection {
+    outline: none;
+    border-color: var(--uio-accent-line);
+    box-shadow: 0 0 0 3px var(--uio-accent-soft);
+}
+
+/* Checkboxes: a dark box that fills with the accent when ticked. */
+body.uio-chrome input[type="checkbox"]:not(.del_checkbox) {
+    width: calc(var(--mainFontSize) * 1.1);
+    height: calc(var(--mainFontSize) * 1.1);
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    outline: none;
+    background-color: rgba(0, 0, 0, 0.25);
+    box-shadow: none;
+    filter: none;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+body.uio-chrome input[type="checkbox"]:not(.del_checkbox)::before {
+    box-shadow: inset 1em 1em #fff;
+}
+
+body.uio-chrome input[type="checkbox"]:not(.del_checkbox):checked {
+    background-color: var(--uio-accent);
+    border-color: var(--uio-accent);
+}
+
+/* Toggle rows breathe a little and the whole row is the tap target. */
+body.uio-chrome .checkbox_label {
+    gap: 8px;
+    align-items: center;
+}
+
+/* Sliders: a thin track, accent thumb. */
+body.uio-chrome input[type="range"] {
+    height: 4px;
+    /* SillyTavern paints a fixed 70% "fill" that doesn't follow the value, so
+       the track is one even colour instead. */
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+    filter: none;
+}
+
+body.uio-chrome input[type="range"]::-webkit-slider-thumb {
+    height: 18px;
+    width: 18px;
+    background: var(--uio-accent);
+    border: 3px solid #1c1a22;
+    box-shadow: 0 0 0 1px var(--uio-accent-line);
+}
+
+body.uio-chrome input[type="range"]::-moz-range-thumb {
+    height: 14px;
+    width: 14px;
+    background: var(--uio-accent);
+    border: 3px solid #1c1a22;
+}
+
+/* Section headers (preset headers, collapsible sections): flat cards instead
+   of the glossy gradient. */
+body.uio-chrome .standoutHeader {
+    background-image: none;
+    background-color: var(--uio-chip);
+    border-color: var(--uio-line);
+    border-radius: var(--uio-radius);
+    padding: 4px 6px 4px 10px;
+}
+
+body.uio-chrome .standoutHeader.inline-drawer-header {
+    padding: 8px 10px;
+}
+
+body.uio-chrome .standoutHeader ~ .inline-drawer-content {
+    border-color: var(--uio-line);
+    border-radius: var(--uio-radius);
+    background-color: rgba(0, 0, 0, 0.18);
+    padding: 8px;
+    margin-top: 4px;
+}
+
+body.uio-chrome #extensions_settings .inline-drawer-header,
+body.uio-chrome #extensions_settings2 .inline-drawer-header {
+    border-radius: var(--uio-radius);
+    background-color: var(--uio-chip);
+    background-image: none;
+    border: 1px solid var(--uio-line);
+    padding: 8px 10px;
+}
+
+body.uio-chrome #extensions_settings .inline-drawer,
+body.uio-chrome #extensions_settings2 .inline-drawer {
+    margin-bottom: 6px;
+}
+
+body.uio-chrome .inline-drawer-icon.fa-circle-chevron-down,
+body.uio-chrome .inline-drawer-icon.fa-circle-chevron-up {
+    opacity: 0.6;
+}
+
+/* Slider blocks in the AI response panel: tidy labels and number boxes. */
+body.uio-chrome .range-block-title {
+    font-size: 0.9em;
+    opacity: 0.85;
+}
+
+body.uio-chrome .range-block-counter input,
+body.uio-chrome .range-block-counter .text_pole {
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Descriptions and hints */
+body.uio-chrome .toggle-description {
+    opacity: 0.6;
+}
+
+/* ===================== Chrome: the send bar ===================== */
+/* A rounded bar: the message box is its own soft field, the buttons are
+   matching round icons, and Send takes the accent. */
+
+body.uio-chrome #send_form {
+    border-color: var(--uio-line);
+    border-bottom-color: transparent;
+    border-radius: 18px 18px 0 0;
+    padding: 4px 6px;
+    box-sizing: border-box;
+}
+
+body.uio-chrome #nonQRFormItems {
+    align-items: flex-end;
+    column-gap: 4px;
+}
+
+body.uio-chrome #send_textarea {
+    margin: 3px 0;
+    padding: 8px 12px;
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--uio-line);
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+body.uio-chrome #send_textarea:focus {
+    outline: none;
+    border-color: var(--uio-accent-line);
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
+body.uio-chrome #leftSendForm,
+body.uio-chrome #rightSendForm {
+    width: auto;
+    height: auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    align-self: flex-end;
+    gap: 2px;
+    margin-bottom: 4px;
+}
+
+/* Sizes and shapes only: SillyTavern decides which of these buttons show. */
+body.uio-chrome #leftSendForm > div,
+body.uio-chrome #rightSendForm > div:not(.mes_stop):not(.stscript_btn) {
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    font-size: calc(var(--bottomFormIconSize) * 0.72);
+    background-color: transparent;
+    opacity: 0.7;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+body.uio-chrome #options_button {
+    margin-left: 0;
+    line-height: 36px;
+    text-align: center;
+}
+
+body.uio-chrome #leftSendForm > div:hover,
+body.uio-chrome #rightSendForm > div:hover {
+    background-color: var(--uio-chip-hover);
+    opacity: 1;
+}
+
+body.uio-chrome #send_but {
+    background-color: var(--uio-accent);
+    color: #fff;
+    font-size: calc(var(--bottomFormIconSize) * 0.6);
+    opacity: 1;
+}
+
+body.uio-chrome #send_but:hover {
+    background-color: var(--uio-accent);
+    filter: brightness(1.1);
+}
+
+body.uio-chrome #mes_stop {
+    color: #ff7a74;
+    opacity: 1;
+}
+
+/* The ☰ options menu and the ✨ extensions menu */
+body.uio-chrome #extensionsMenu,
+body.uio-chrome #options .options-content {
+    padding: 6px;
+    border: 1px solid var(--uio-line);
+    border-radius: 16px;
+    background-color: var(--uio-surface);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+
+body.uio-chrome .options-content a,
+body.uio-chrome #extensionsMenu > .extension_container > div,
+body.uio-chrome #extensionsMenu > div:not(.extension_container),
+body.uio-chrome .list-group .list-group-item {
+    align-items: center;
+    padding: 9px 10px;
+    border-radius: 10px;
+    opacity: 0.78;
+    transition: background-color 0.15s, opacity 0.15s;
+}
+
+body.uio-chrome .options-content a:hover,
+body.uio-chrome #extensionsMenu > .extension_container > div:hover,
+body.uio-chrome #extensionsMenu > div:not(.extension_container):hover,
+body.uio-chrome .list-group .list-group-item:hover {
+    background-color: var(--uio-chip-hover);
+    opacity: 1;
+}
+
+body.uio-chrome .options-content i,
+body.uio-chrome .extensionsMenuExtensionButton {
+    color: var(--uio-accent);
+}
+
+body.uio-chrome .options-content hr {
+    margin: 4px 6px;
+    border-top-color: var(--uio-line);
+}
+
+body.uio-chrome .options-content,
+body.uio-chrome .list-group {
+    border: none;
+}
+
+/* ===================== Like: undo bar and tracker header ===================== */
+
+#uio-snack {
+    position: fixed;
+    /* placed from the top: offsets from the bottom collapse on some phones */
+    top: calc(var(--topBarBlockSize, 50px) + 10px);
+    left: 50%;
+    z-index: 4100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 24px);
+    padding: 6px 6px 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--uio-line, rgba(255, 255, 255, 0.09));
+    background: var(--uio-surface, rgba(24, 22, 30, 0.92));
+    color: var(--SmartThemeBodyColor, #ddd);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    font-size: 0.9em;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -8px);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+#uio-snack.uio-show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+}
+
+.uio-snack-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.uio-snack-undo {
+    min-height: 30px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 999px;
+    background: var(--uio-accent-soft, rgba(181, 108, 255, 0.18));
+    color: var(--uio-accent, #b56cff);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.uio-snack-undo[hidden] {
+    display: none;
+}
+
+.uio-tracker-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.uio-tracker-head b {
+    flex: 1;
+}
+
+.uio-tracker-head .menu_button {
+    width: auto;
+    margin: 0;
+    white-space: nowrap;
 }
