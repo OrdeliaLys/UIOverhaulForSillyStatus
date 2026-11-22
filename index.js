@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.0.0';
+const VERSION = '2.0.1';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
@@ -582,6 +582,7 @@ jQuery(() => {
         for (const name of ['CHARACTER_PAGE_LOADED', 'CHARACTER_EDITED', 'CHARACTER_DELETED', 'GROUP_UPDATED', 'MESSAGE_RECEIVED', 'MESSAGE_SENT', 'MESSAGE_DELETED']) {
             if (ev[name]) eventSource.on(ev[name], () => stage.refresh(name === 'MESSAGE_RECEIVED' || name === 'MESSAGE_SENT' || name === 'MESSAGE_DELETED' ? 'bar' : 'cards'));
         }
+        if (ev.PERSONA_CHANGED) eventSource.on(ev.PERSONA_CHANGED, () => stage.refresh('persona'));
         document.addEventListener('sillystatus:changed', () => stage.refresh('effects'));
     } catch (err) {
         console.error('[UI Overhaul] failed to start', err);

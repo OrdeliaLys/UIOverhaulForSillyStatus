@@ -319,11 +319,24 @@ export function createStage(h) {
             </div>`).join('');
     }
 
+    // The persona in use, by its avatar file (names can repeat; files can't).
+    let chosenPersona = null;
     function currentPersona() {
         const c = h.ctx();
-        const sel = document.querySelector('#user_avatar_block .avatar-container.selected')?.getAttribute('imgfile');
-        if (sel) return sel;
         const personas = c.powerUserSettings?.personas ?? {};
+        const known = (a) => (a && Object.prototype.hasOwnProperty.call(personas, a) ? a : null);
+        // 1. SillyTavern's persona list marks the selected one.
+        const sel = known(document.querySelector('#user_avatar_block .avatar-container.selected')?.getAttribute('data-avatar-id'));
+        if (sel) return sel;
+        // 2. Your messages in the open chat show the current persona's picture.
+        for (const im of document.querySelectorAll('#chat .mes[is_user="true"]:not([force_avatar="true"]) .avatar img')) {
+            const m = /[?&]type=persona&file=([^&]+)/.exec(im.getAttribute('src') ?? '');
+            const file = known(m ? decodeURIComponent(m[1]) : null);
+            if (file) return file;
+        }
+        // 3. The last one picked here, if it still has the current name.
+        if (chosenPersona && personas[chosenPersona] === c.name1) return chosenPersona;
+        // 4. Otherwise match by name.
         return Object.keys(personas).find(a => personas[a] === c.name1) ?? null;
     }
 
@@ -525,15 +538,22 @@ export function createStage(h) {
         els.menu.classList.remove('uix-open');
     }
 
+    // Switches by the persona's avatar file, so personas that share a name
+    // are told apart. Uses SillyTavern's own persona list when it's on screen,
+    // otherwise its /persona-set command in lookup mode (which never renames
+    // you when nothing matches).
     async function switchPersona(avatar) {
         closeMenu();
-        const el = document.querySelector(`#user_avatar_block .avatar-container[imgfile="${CSS.escape(avatar)}"]`);
-        if (el) el.click();
-        else {
-            const name = h.ctx().powerUserSettings?.personas?.[avatar];
-            if (name) await h.ctx().executeSlashCommandsWithOptions(`/persona-set mode=all ${JSON.stringify(name)}`);
+        if (avatar === currentPersona()) return;
+        chosenPersona = avatar;
+        try {
+            const el = document.querySelector(`#user_avatar_block .avatar-container[data-avatar-id="${CSS.escape(avatar)}"]`);
+            if (el) el.click();
+            else await h.ctx().executeSlashCommandsWithOptions(`/persona-set mode=lookup ${JSON.stringify(avatar)}`);
+        } catch (err) {
+            console.error('[UI Overhaul] could not switch persona', err);
         }
-        setTimeout(() => { renderPersonaChip(); renderHome(); }, 250);
+        setTimeout(() => { renderPersonaChip(); if (state.view === 'home') renderHome(); }, 300);
     }
 
     // ---------- input handling ----------
@@ -684,6 +704,11 @@ export function createStage(h) {
         refresh(what) {
             if (!state.on || !els) return;
             if (what === 'effects') return renderEffects();
+            if (what === 'persona') {
+                renderPersonaChip();
+                if (state.view === 'home') renderHome();
+                return;
+            }
             if (what === 'chat') {
                 placeQuick();
                 renderBar();
