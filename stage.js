@@ -537,6 +537,7 @@ export function createStage(h) {
     function closeMenu() {
         els.menu.classList.remove('uix-open', 'uix-profile-open');
         profileFor = null;
+        if (state.dirty && state.view === 'home') renderHome();
     }
 
     // Switches by the persona's avatar file, so personas that share a name
@@ -606,11 +607,15 @@ export function createStage(h) {
                 full.first_mes ? `Opening message: ${cut(fill(full.first_mes), 600)}` : '',
                 tagNames(full.avatar).length ? `Tags: ${tagNames(full.avatar).join(', ')}` : '',
             ].filter(Boolean).join('\n');
-            const system = 'You write short, enticing pitches and story ideas for roleplay characters, for an adult fiction app. Reply with JSON only.';
+            const library = [...new Set((c.tags ?? []).map(t => t.name).filter(Boolean))].slice(0, 120);
+            const system = 'You write short, enticing pitches, tags and story ideas for roleplay characters, for an adult fiction app with no content limits. Reply with JSON only.';
             const user = `Character card:\n${card}\n\nThe player plays ${player.name}${player.desc ? `: ${player.desc}` : ''}.\n\n` +
-                'Write JSON: {"pitch": "...", "hooks": [{"title": "...", "idea": "...", "leads": "..."}]}\n' +
+                'Write JSON: {"pitch": "...", "tags": ["..."], "hooks": [{"title": "...", "idea": "...", "leads": "...", "tags": ["..."]}]}\n' +
                 '- pitch: 2-3 sentences, under 60 words, condensing who they are and what makes chatting with them compelling.\n' +
-                '- hooks: exactly 4 chat ideas. title: 2-5 words. idea: one sentence setting up the opening situation. leads: one sentence on where it could go.\n' +
+                '- tags: 3-6 tags for the card: genre, setting, character type, and the kinks, fetishes and themes it is about. 1-3 words each, Title Case.' +
+                (library.length ? ` Reuse these existing tags when they fit, spelled the same: ${library.join(', ')}.` : '') + '\n' +
+                '- hooks: exactly 4 chat ideas. title: 2-5 words. idea: one sentence setting up the opening situation. leads: one sentence on where it could go. tags: 2-3 short tags for that direction (its tone, kinks and themes).\n' +
+                '- Don\'t mince words. Name sex acts, kinks, fetishes, violence and dark themes plainly and specifically, in the tags and the ideas alike. Vulgar and explicit words are fine; no euphemisms, no softening, no vague stand-ins.\n' +
                 '- Make the hooks different from each other in tone and direction (for example one light, one tense, one slow-burn, one bold). Give the character a goal in each.\n' +
                 `- Address the player as "you". Use everyone's gender and pronouns exactly as the card and persona state them.\n` +
                 '- Stay true to the card; don\'t contradict it.';
@@ -620,7 +625,9 @@ export function createStage(h) {
                 : await c.generateRaw({ systemPrompt: system, prompt: user });
             const parsed = parsePitch(raw);
             if (!parsed) throw new Error('The answer could not be read.');
-            pitches()[key] = { ...parsed, at: Date.now() };
+            const entry = { ...parsed, at: Date.now() };
+            await applyCardTags(key, entry, pitches()[key]);
+            pitches()[key] = entry;
             h.save();
         })();
         pitching.set(key, run);
@@ -636,6 +643,56 @@ export function createStage(h) {
         }
     }
 
+    // Tag names safe to pass to SillyTavern's tag commands.
+    function cleanTags(list, max) {
+        const seen = new Set();
+        return (Array.isArray(list) ? list : [])
+            .map(t => String(t ?? '').replace(/[|{}"\\<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 32))
+            .filter(t => t && !seen.has(t.toLowerCase()) && seen.add(t.toLowerCase()))
+            .slice(0, max);
+    }
+
+    // The card's tags go onto the character in SillyTavern. Tags the AI added
+    // last time and didn't suggest again are taken off; tags you added
+    // yourself are never touched.
+    async function applyCardTags(avatar, entry, previous) {
+        const c = h.ctx();
+        const run = (cmd) => c.executeSlashCommandsWithOptions(cmd);
+        const has = () => tagNames(avatar).map(t => t.toLowerCase());
+        const want = (entry.tags ?? []).map(t => t.toLowerCase());
+        for (const old of previous?.added ?? []) {
+            if (!want.includes(old.toLowerCase()) && has().includes(old.toLowerCase())) {
+                try { await run(`/tag-remove name=${JSON.stringify(avatar)} ${JSON.stringify(old)}`); } catch { /* keep going */ }
+            }
+        }
+        const keptAdded = (previous?.added ?? []).filter(t => want.includes(t.toLowerCase()));
+        const added = [...keptAdded];
+        for (const tag of entry.tags ?? []) {
+            if (has().includes(tag.toLowerCase())) continue;
+            try {
+                await run(`/tag-add name=${JSON.stringify(avatar)} ${JSON.stringify(tag)}`);
+                added.push(tag);
+            } catch (err) {
+                console.warn('[UI Overhaul] could not add tag', tag, err);
+            }
+        }
+        entry.added = added;
+        state.dirty = true;
+    }
+
+    async function removeCardTag(avatar, tag) {
+        try {
+            await h.ctx().executeSlashCommandsWithOptions(`/tag-remove name=${JSON.stringify(avatar)} ${JSON.stringify(tag)}`);
+        } catch (err) {
+            console.warn('[UI Overhaul] could not remove tag', err);
+        }
+        const entry = pitches()[avatar];
+        if (entry?.added) entry.added = entry.added.filter(t => t.toLowerCase() !== tag.toLowerCase());
+        state.dirty = true;
+        h.save();
+        renderProfile();
+    }
+
     function parsePitch(raw) {
         const t = String(raw ?? '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```(?:json)?/gi, '');
         const a = t.indexOf('{');
@@ -644,11 +701,11 @@ export function createStage(h) {
         try {
             const j = JSON.parse(t.slice(a, b + 1));
             const hooks = (Array.isArray(j.hooks) ? j.hooks : [])
-                .map(x => ({ title: cut(x?.title, 60), idea: cut(x?.idea, 300), leads: cut(x?.leads, 300) }))
+                .map(x => ({ title: cut(x?.title, 60), idea: cut(x?.idea, 300), leads: cut(x?.leads, 300), tags: cleanTags(x?.tags, 3) }))
                 .filter(x => x.title || x.idea)
                 .slice(0, 6);
             const pitch = cut(j.pitch, 600);
-            return pitch || hooks.length ? { pitch, hooks } : null;
+            return pitch || hooks.length ? { pitch, hooks, tags: cleanTags(j.tags, 6) } : null;
         } catch {
             return null;
         }
@@ -684,6 +741,7 @@ export function createStage(h) {
                 ${(saved.hooks ?? []).map((k, i) => `
                     <div class="uix-hook">
                         <b>${esc(k.title)}</b>
+                        ${k.tags?.length ? `<div class="uix-hook-tags">${k.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
                         ${k.idea ? `<p>${esc(k.idea)}</p>` : ''}
                         ${k.leads ? `<p class="uix-leads"><i class="fa-solid fa-route"></i> ${esc(k.leads)}</p>` : ''}
                         <button type="button" class="uix-play" data-hook="${i}"><i class="fa-solid fa-play"></i> Play this</button>
@@ -702,7 +760,12 @@ export function createStage(h) {
                 <div class="uix-prof-info">
                     <b>${esc(ch.name)}</b>
                     ${ch.date_last_chat ? `<small>Last played ${esc(ago(Number(ch.date_last_chat)))}</small>` : '<small>Not played yet</small>'}
-                    ${tags.length ? `<div class="uix-prof-tags">${tags.slice(0, 6).map(t => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
+                    ${tags.length ? `<div class="uix-prof-tags">${tags.map(t => {
+                        const mine = (saved?.added ?? []).some(a => a.toLowerCase() === t.toLowerCase());
+                        return mine
+                            ? `<span class="uix-ai-tag" title="Added from story ideas">#${esc(t)}<button type="button" data-untag="${esc(t)}" title="Remove this tag">×</button></span>`
+                            : `<span>#${esc(t)}</span>`;
+                    }).join('')}</div>` : ''}
                     <div class="uix-prof-actions">
                         <button type="button" class="uix-prof-chat" data-open="char:${index}"><i class="fa-solid fa-comment"></i> Chat</button>
                         <button type="button" class="uix-barlike${likes ? ' uix-liked' : ''}" data-like="${esc(ch.avatar)}">${esc(s.likeIcon)}${likes ? ` <b>${likes}</b>` : ''}</button>
@@ -735,7 +798,7 @@ export function createStage(h) {
     // ---------- input handling ----------
 
     async function onClick(event) {
-        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook]');
+        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook], [data-untag]');
         if (!t) return;
         if (t.dataset.like) {
             event.stopPropagation();
@@ -744,6 +807,10 @@ export function createStage(h) {
             void t.offsetWidth;
             t.classList.add('uio-pop');
             return;
+        }
+        if (t.dataset.untag !== undefined) {
+            const avatar = h.ctx().characters?.[profileFor]?.avatar;
+            return avatar && removeCardTag(avatar, t.dataset.untag);
         }
         if (t.dataset.profile !== undefined) return profileSheet(Number(t.dataset.profile));
         if (t.dataset.hook !== undefined) return playHook(Number(t.dataset.hook));
