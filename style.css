@@ -1412,3 +1412,24 @@ body.uio-chrome .list-group {
     margin: 0;
     white-space: nowrap;
 }
+
+/* ===================== AI-written openings ===================== */
+
+#chat .mes.uio-ai-made .mes_block {
+    outline: 1px dashed var(--uio-accent-line, rgba(181, 108, 255, 0.45));
+    outline-offset: 4px;
+    border-radius: 10px;
+}
+
+.uio-ai-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--uio-accent-soft, rgba(181, 108, 255, 0.16));
+    color: var(--uio-accent, #b56cff);
+    font-size: 0.72em;
+    font-weight: 600;
+}

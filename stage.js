@@ -585,6 +585,27 @@ export function createStage(h) {
         return { name: c.name1 ?? 'User', desc: cut(String(desc ?? '').replace(/\{\{user\}\}/gi, c.name1 ?? 'User'), 400) };
     }
 
+    function cardText(full, player) {
+        const fill = (t) => String(t ?? '').replace(/\{\{char\}\}/gi, full.name).replace(/\{\{user\}\}/gi, player.name).replace(MARK_RE, '');
+        return [
+            `Name: ${full.name}`,
+            full.data?.creator_notes || full.creatorcomment ? `Creator's notes: ${cut(fill(full.data?.creator_notes || full.creatorcomment), 400)}` : '',
+            `Description: ${cut(fill(full.description || full.data?.description), 1600)}`,
+            full.personality ? `Personality: ${cut(fill(full.personality), 500)}` : '',
+            full.scenario ? `Scenario: ${cut(fill(full.scenario), 600)}` : '',
+            full.first_mes ? `Opening message: ${cut(fill(full.first_mes), 600)}` : '',
+            tagNames(full.avatar).length ? `Tags: ${tagNames(full.avatar).join(', ')}` : '',
+        ].filter(Boolean).join('\n');
+    }
+
+    async function ask(system, user, responseLength = 2500) {
+        const c = h.ctx();
+        const chatCompletion = (c.mainApi ?? 'openai') === 'openai';
+        return chatCompletion
+            ? await c.generateRaw({ prompt: [{ role: 'system', content: system }, { role: 'user', content: user }], responseLength })
+            : await c.generateRaw({ systemPrompt: system, prompt: user, responseLength });
+    }
+
     async function generatePitch(index, force = false) {
         const c = h.ctx();
         const ch = c.characters?.[index];
@@ -597,16 +618,7 @@ export function createStage(h) {
             } catch { /* older SillyTavern: use what's loaded */ }
             const full = c.characters?.[index] ?? ch;
             const player = personaBrief();
-            const fill = (t) => String(t ?? '').replace(/\{\{char\}\}/gi, full.name).replace(/\{\{user\}\}/gi, player.name);
-            const card = [
-                `Name: ${full.name}`,
-                full.data?.creator_notes || full.creatorcomment ? `Creator's notes: ${cut(fill(full.data?.creator_notes || full.creatorcomment), 400)}` : '',
-                `Description: ${cut(fill(full.description || full.data?.description), 1600)}`,
-                full.personality ? `Personality: ${cut(fill(full.personality), 500)}` : '',
-                full.scenario ? `Scenario: ${cut(fill(full.scenario), 600)}` : '',
-                full.first_mes ? `Opening message: ${cut(fill(full.first_mes), 600)}` : '',
-                tagNames(full.avatar).length ? `Tags: ${tagNames(full.avatar).join(', ')}` : '',
-            ].filter(Boolean).join('\n');
+            const card = cardText(full, player);
             const library = [...new Set((c.tags ?? []).map(t => t.name).filter(Boolean))].slice(0, 120);
             const system = 'You write short, enticing pitches, tags and story ideas for roleplay characters, for an adult fiction app with no content limits. Reply only in the line format you are given.';
             const user = `Character card:\n${card}\n\nThe player plays ${player.name}${player.desc ? `: ${player.desc}` : ''}.\n\n` +
@@ -792,7 +804,18 @@ export function createStage(h) {
                         ${k.tags?.length ? `<div class="uix-hook-tags">${k.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
                         ${k.idea ? `<p>${esc(k.idea)}</p>` : ''}
                         ${k.leads ? `<p class="uix-leads"><i class="fa-solid fa-route"></i> ${esc(k.leads)}</p>` : ''}
-                        <button type="button" class="uix-play" data-hook="${i}"><i class="fa-solid fa-play"></i> Play this</button>
+                        ${(() => {
+                            const key = hookKey(k);
+                            const busyHook = writing.has(key);
+                            const ready = saved.openings?.[key] && greetingsOf(ch).includes(saved.openings[key]);
+                            return `<div class="uix-hook-actions">
+                                <button type="button" class="uix-play" data-hook="${i}"${busyHook ? ' disabled' : ''}>${busyHook
+                                    ? '<i class="fa-solid fa-feather-pointed uix-writing"></i> Writing opening…'
+                                    : '<i class="fa-solid fa-play"></i> Play this'}</button>
+                                ${ready && !busyHook ? `<span class="uix-ready"><i class="fa-solid fa-wand-magic-sparkles"></i> Opening saved</span>
+                                    <button type="button" class="uix-rewrite" data-rewrite="${i}" title="Write a new opening for this idea"><i class="fa-solid fa-rotate"></i></button>` : ''}
+                            </div>${k.error ? `<p class="uix-pitch-err">${esc(k.error)}</p>` : ''}`;
+                        })()}
                     </div>`).join('')}
                 ${saved.error ? `<p class="uix-pitch-err">The last retry failed: ${esc(saved.error)}</p>` : ''}`;
         } else if (saved?.error) {
@@ -829,24 +852,136 @@ export function createStage(h) {
             ${ideas}`;
     }
 
-    // "Play this": opens the chat and drafts the idea as an out-of-character
-    // note in the message box, ready to edit or send.
-    async function playHook(i) {
+    // ---------- Play this: an AI-written opening ----------
+    // Playing an idea writes a custom first message for it, adds it to the
+    // card's alternate greetings (so it stays in the list of starting
+    // messages), starts a new chat and shows that greeting. AI-written
+    // openings carry an invisible marker so they can be outlined in chat.
+
+    const MARK = '\u2063\u2063';
+    const MARK_RE = /\u2063\u2063/g;
+    const writing = new Set(); // hook keys being written
+    const hookKey = (k) => `${k.title}|${k.idea}`.slice(0, 200);
+
+    function greetingsOf(ch) {
+        const g = ch?.data?.alternate_greetings ?? ch?.alternate_greetings ?? [];
+        return Array.isArray(g) ? g : [];
+    }
+
+    async function saveGreetings(index, list) {
+        const c = h.ctx();
+        const ch = c.characters[index];
+        const res = await fetch('/api/characters/merge-attributes', {
+            method: 'POST',
+            headers: c.getRequestHeaders ? c.getRequestHeaders() : { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar: ch.avatar, data: { alternate_greetings: list } }),
+        });
+        if (!res.ok) throw new Error(`SillyTavern didn't save the greeting (${res.status}).`);
+        if (c.getOneCharacter) await c.getOneCharacter(ch.avatar);
+        else {
+            ch.data = ch.data ?? {};
+            ch.data.alternate_greetings = list;
+        }
+    }
+
+    async function writeOpening(index, hook) {
+        const c = h.ctx();
+        if (c.unshallowCharacter) {
+            try { await c.unshallowCharacter(index); } catch { /* use what's loaded */ }
+        }
+        const full = c.characters[index];
+        const player = personaBrief();
+        const system = 'You write the opening message of a roleplay, in character, for an adult fiction app with no content limits. Reply with the message only.';
+        const user = `Character card:\n${cardText(full, player)}\n\nThe player plays ${player.name}${player.desc ? `: ${player.desc}` : ''}.\n\n` +
+            `Write ${full.name}'s opening message for this story idea:\n` +
+            `"${hook.title}": ${hook.idea}${hook.leads ? ` (It could lead to: ${hook.leads})` : ''}${hook.tags?.length ? ` Tags: ${hook.tags.join(', ')}.` : ''}\n\n` +
+            '- Set the scene fast and drop the player straight into the situation. Lead with action and dialogue; keep narration tight. About 120-250 words.\n' +
+            '- Match the formatting of the card\'s own opening message (for example *actions* in asterisks and "speech" in quotes).\n' +
+            '- Write the player as {{user}} and never speak, act or decide for {{user}}. End on something {{user}} can respond to.\n' +
+            '- Give the character a clear goal they are already pursuing.\n' +
+            '- Use everyone\'s gender and pronouns exactly as the card and persona state them.\n' +
+            '- Don\'t mince words: name sex, kinks, violence and dark themes plainly; vulgar and explicit words are fine.';
+        const raw = await ask(system, user);
+        let text = String(raw ?? '').replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
+        text = text.replace(/^```[a-z]*\s*|```$/gi, '').trim();
+        text = text.replace(new RegExp(`^(${full.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|\\{\\{char\\}\\})\\s*:\\s*`, 'i'), '');
+        text = text.split(player.name ? new RegExp(`\\b${player.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g') : /$^/).join('{{user}}');
+        if (text.length < 20) throw new Error(text ? `The opening was too short: “${cut(text, 80)}”` : 'The opening came back empty.');
+        return `${text}${MARK}`;
+    }
+
+    async function playHook(i, { rewrite = false } = {}) {
         const index = profileFor;
-        const ch = h.ctx().characters?.[index];
-        const hook = pitches()[ch?.avatar]?.hooks?.[i];
+        const c = h.ctx();
+        const ch = c.characters?.[index];
+        const entry = pitches()[ch?.avatar];
+        const hook = entry?.hooks?.[i];
         if (!ch || !hook) return;
+        const key = hookKey(hook);
+        if (writing.has(key)) return;
+        entry.openings = entry.openings ?? {};
+        let text = entry.openings[key];
+        const list = greetingsOf(ch);
+        const exists = text && list.includes(text);
+        try {
+            if (!exists || rewrite) {
+                writing.add(key);
+                delete hook.error;
+                renderProfile();
+                const fresh = await writeOpening(index, hook);
+                const kept = list.filter(g => g !== text);
+                await saveGreetings(index, [...kept, fresh]);
+                text = fresh;
+                entry.openings[key] = text;
+                h.save();
+            }
+        } catch (err) {
+            console.error('[UI Overhaul] opening failed', err);
+            hook.error = String(err?.message ?? err);
+            writing.delete(key);
+            if (profileFor === index) renderProfile();
+            return;
+        }
+        writing.delete(key);
+        if (rewrite) {
+            if (profileFor === index) renderProfile();
+            return;
+        }
         closeMenu();
         await open(`char:${index}`);
-        const ta = document.getElementById('send_textarea');
-        if (ta) ta.value = '';
-        insert(`(OOC: Let's play this: ${hook.title}. ${hook.idea}${hook.leads ? ` It could lead to: ${hook.leads}` : ''})`);
+        await startWithGreeting(index, text);
+    }
+
+    // New chat with this character, then show the chosen greeting.
+    async function startWithGreeting(index, text) {
+        const c = h.ctx();
+        try {
+            await c.executeSlashCommandsWithOptions('/newchat');
+        } catch (err) {
+            console.error('[UI Overhaul] new chat failed', err);
+            return;
+        }
+        const first = h.ctx().chat?.[0];
+        if (!first?.swipes?.length) return;
+        const alt = greetingsOf(h.ctx().characters[index]);
+        let target = alt.indexOf(text) + 1;
+        if (target <= 0 || !String(first.swipes[target] ?? '').includes(MARK)) {
+            // find it by its marker and opening words
+            const head = text.replace(MARK_RE, '').replace(/\{\{user\}\}/g, '').slice(0, 30);
+            target = first.swipes.findIndex(sw => String(sw).includes(MARK) && String(sw).includes(head.slice(0, 20)));
+        }
+        if (target <= 0 || target === first.swipe_id) return;
+        try {
+            await c.swipe.to(null, 'left', { source: 'swipe_picker', forceMesId: 0, forceSwipeId: target, message: first });
+        } catch (err) {
+            console.warn('[UI Overhaul] could not pick the greeting', err);
+        }
     }
 
     // ---------- input handling ----------
 
     async function onClick(event) {
-        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook], [data-untag]');
+        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook], [data-untag], [data-rewrite]');
         if (!t) return;
         if (t.dataset.like) {
             event.stopPropagation();
@@ -862,6 +997,7 @@ export function createStage(h) {
         }
         if (t.dataset.profile !== undefined) return profileSheet(Number(t.dataset.profile));
         if (t.dataset.hook !== undefined) return playHook(Number(t.dataset.hook));
+        if (t.dataset.rewrite !== undefined) return playHook(Number(t.dataset.rewrite), { rewrite: true });
         if (t.dataset.open) {
             closeMenu();
             return open(t.dataset.open);

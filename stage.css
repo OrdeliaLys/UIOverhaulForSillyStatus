@@ -1494,3 +1494,39 @@ body.uix #uio-snack {
     font-size: 0.72em;
     color: var(--uix-dim);
 }
+
+.uix-hook-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.uix-play:disabled {
+    opacity: 0.75;
+}
+
+.uix-writing {
+    animation: uix-write 1.2s ease-in-out infinite;
+}
+
+.uix-ready {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74em;
+    color: var(--uix-dim);
+}
+
+.uix-ready i {
+    color: var(--uix-accent);
+}
+
+.uix-rewrite {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--uix-line);
+    border-radius: 50%;
+    background: transparent;
+    font-size: 0.8em !important;
+}

@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.2.1';
+const VERSION = '2.3.0';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
@@ -380,9 +380,32 @@ function messageAvatar(mes) {
     return c.characters?.find(ch => ch.name === msg.name)?.avatar ?? null;
 }
 
+// Openings written by Stage's "Play this" end with an invisible marker; those
+// messages get an outline and a small label so you can tell they're AI-made.
+const AI_MARK = '\u2063\u2063';
+
+function markAiMade(chatEl) {
+    const chat = ctx().chat ?? [];
+    for (const mes of chatEl.querySelectorAll('.mes')) {
+        const msg = chat[Number(mes.getAttribute('mesid'))];
+        const ai = !!msg && !msg.is_user && String(msg.mes ?? '').includes(AI_MARK);
+        mes.classList.toggle('uio-ai-made', ai);
+        const tag = mes.querySelector('.uio-ai-label');
+        if (ai && !tag) {
+            const label = document.createElement('span');
+            label.className = 'uio-ai-label';
+            label.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI-written opening';
+            mes.querySelector('.mes_block')?.appendChild(label);
+        } else if (!ai && tag) {
+            tag.remove();
+        }
+    }
+}
+
 function decorateChat() {
     const chatEl = document.getElementById('chat');
     if (!chatEl) return;
+    markAiMade(chatEl);
     for (const mes of chatEl.querySelectorAll('.mes[is_user="false"]')) {
         const avatar = messageAvatar(mes);
         let btn = mes.querySelector('.uio-like');
