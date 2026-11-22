@@ -169,7 +169,7 @@ export function createStage(h) {
         bar.id = 'uix-bar';
         bar.innerHTML = `
             <button type="button" class="uix-icon" data-act="home" title="Home"><i class="fa-solid fa-chevron-left"></i></button>
-            <button type="button" class="uix-who" data-act="card" title="Character card"></button>
+            <button type="button" class="uix-who" data-act="who" title="Profile"></button>
             <button type="button" class="uix-effects" data-act="effects" title="Status effects"></button>
             <button type="button" class="uix-barlike" data-act="like" title="Like"></button>
             <button type="button" class="uix-icon" data-act="actions" title="More"><i class="fa-solid fa-ellipsis-vertical"></i></button>`;
@@ -307,7 +307,7 @@ export function createStage(h) {
             return;
         }
         grid.innerHTML = list.map(e => `
-            <div class="uix-card${isActive(e) ? ' uix-active' : ''}" data-open="${e.type}:${esc(e.id)}" role="button" tabindex="0">
+            <div class="uix-card${isActive(e) ? ' uix-active' : ''}" ${e.type === 'char' ? `data-profile="${esc(e.id)}"` : `data-open="${e.type}:${esc(e.id)}"`} role="button" tabindex="0">
                 ${portrait(e, 'uix-card-pic')}
                 ${e.fav ? '<i class="fa-solid fa-star uix-fav"></i>' : ''}
                 ${e.type === 'char' ? `<button type="button" class="uix-cardlike${e.likes ? ' uix-liked' : ''}" data-like="${esc(e.avatar)}">${esc(s.likeIcon)}${e.likes ? ` <b>${e.likes}</b>` : ''}</button>` : ''}
@@ -535,7 +535,8 @@ export function createStage(h) {
     }
 
     function closeMenu() {
-        els.menu.classList.remove('uix-open');
+        els.menu.classList.remove('uix-open', 'uix-profile-open');
+        profileFor = null;
     }
 
     // Switches by the persona's avatar file, so personas that share a name
@@ -556,10 +557,185 @@ export function createStage(h) {
         setTimeout(() => { renderPersonaChip(); if (state.view === 'home') renderHome(); }, 300);
     }
 
+    // ---------- profile and story ideas ----------
+    // Inspecting a card shows a profile. The first time, the AI is asked for a
+    // short pitch and a few chat ideas (where a story could start and where it
+    // could lead). They're saved per card; Retry asks again.
+
+    let profileFor = null;       // character index on show
+    const pitching = new Map();  // avatar -> running request
+
+    function pitches() {
+        const s = settings();
+        if (!s.pitches || typeof s.pitches !== 'object') s.pitches = {};
+        return s.pitches;
+    }
+
+    function cut(text, n) {
+        const t = String(text ?? '').trim();
+        return t.length > n ? `${t.slice(0, n)}…` : t;
+    }
+
+    function personaBrief() {
+        const c = h.ctx();
+        const pu = c.powerUserSettings ?? {};
+        const avatar = currentPersona();
+        const desc = avatar ? pu.persona_descriptions?.[avatar]?.description : '';
+        return { name: c.name1 ?? 'User', desc: cut(String(desc ?? '').replace(/\{\{user\}\}/gi, c.name1 ?? 'User'), 400) };
+    }
+
+    async function generatePitch(index, force = false) {
+        const c = h.ctx();
+        const ch = c.characters?.[index];
+        if (!ch?.avatar) return;
+        const key = ch.avatar;
+        if (pitching.has(key) || (!force && pitches()[key])) return;
+        const run = (async () => {
+            try {
+                if (c.unshallowCharacter) await c.unshallowCharacter(index);
+            } catch { /* older SillyTavern: use what's loaded */ }
+            const full = c.characters?.[index] ?? ch;
+            const player = personaBrief();
+            const fill = (t) => String(t ?? '').replace(/\{\{char\}\}/gi, full.name).replace(/\{\{user\}\}/gi, player.name);
+            const card = [
+                `Name: ${full.name}`,
+                full.data?.creator_notes || full.creatorcomment ? `Creator's notes: ${cut(fill(full.data?.creator_notes || full.creatorcomment), 400)}` : '',
+                `Description: ${cut(fill(full.description || full.data?.description), 1600)}`,
+                full.personality ? `Personality: ${cut(fill(full.personality), 500)}` : '',
+                full.scenario ? `Scenario: ${cut(fill(full.scenario), 600)}` : '',
+                full.first_mes ? `Opening message: ${cut(fill(full.first_mes), 600)}` : '',
+                tagNames(full.avatar).length ? `Tags: ${tagNames(full.avatar).join(', ')}` : '',
+            ].filter(Boolean).join('\n');
+            const system = 'You write short, enticing pitches and story ideas for roleplay characters, for an adult fiction app. Reply with JSON only.';
+            const user = `Character card:\n${card}\n\nThe player plays ${player.name}${player.desc ? `: ${player.desc}` : ''}.\n\n` +
+                'Write JSON: {"pitch": "...", "hooks": [{"title": "...", "idea": "...", "leads": "..."}]}\n' +
+                '- pitch: 2-3 sentences, under 60 words, condensing who they are and what makes chatting with them compelling.\n' +
+                '- hooks: exactly 4 chat ideas. title: 2-5 words. idea: one sentence setting up the opening situation. leads: one sentence on where it could go.\n' +
+                '- Make the hooks different from each other in tone and direction (for example one light, one tense, one slow-burn, one bold). Give the character a goal in each.\n' +
+                `- Address the player as "you". Use everyone's gender and pronouns exactly as the card and persona state them.\n` +
+                '- Stay true to the card; don\'t contradict it.';
+            const chatCompletion = (c.mainApi ?? 'openai') === 'openai';
+            const raw = chatCompletion
+                ? await c.generateRaw({ prompt: [{ role: 'system', content: system }, { role: 'user', content: user }] })
+                : await c.generateRaw({ systemPrompt: system, prompt: user });
+            const parsed = parsePitch(raw);
+            if (!parsed) throw new Error('The answer could not be read.');
+            pitches()[key] = { ...parsed, at: Date.now() };
+            h.save();
+        })();
+        pitching.set(key, run);
+        if (profileFor === index) renderProfile();
+        try {
+            await run;
+        } catch (err) {
+            console.error('[UI Overhaul] story ideas failed', err);
+            pitches()[key] = { ...(pitches()[key] ?? {}), error: String(err?.message ?? err) };
+        } finally {
+            pitching.delete(key);
+            if (profileFor === index && els.menu.classList.contains('uix-open')) renderProfile();
+        }
+    }
+
+    function parsePitch(raw) {
+        const t = String(raw ?? '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```(?:json)?/gi, '');
+        const a = t.indexOf('{');
+        const b = t.lastIndexOf('}');
+        if (a < 0 || b <= a) return null;
+        try {
+            const j = JSON.parse(t.slice(a, b + 1));
+            const hooks = (Array.isArray(j.hooks) ? j.hooks : [])
+                .map(x => ({ title: cut(x?.title, 60), idea: cut(x?.idea, 300), leads: cut(x?.leads, 300) }))
+                .filter(x => x.title || x.idea)
+                .slice(0, 6);
+            const pitch = cut(j.pitch, 600);
+            return pitch || hooks.length ? { pitch, hooks } : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function profileSheet(index) {
+        const ch = h.ctx().characters?.[index];
+        if (!ch) return;
+        profileFor = index;
+        renderProfile();
+        els.menu.classList.add('uix-open', 'uix-profile-open');
+        guardBack();
+        generatePitch(index);
+    }
+
+    function renderProfile() {
+        const c = h.ctx();
+        const index = profileFor;
+        const ch = c.characters?.[index];
+        if (!ch) return;
+        const s = settings();
+        const e = { type: 'char', id: index, avatar: ch.avatar };
+        const likes = h.likeCount(ch.avatar);
+        const saved = pitches()[ch.avatar];
+        const busy = pitching.has(ch.avatar);
+        const tags = tagNames(ch.avatar);
+        let ideas;
+        if (busy) {
+            ideas = '<div class="uix-pitch-wait"><i class="fa-solid fa-feather-pointed"></i> Writing story ideas…</div>';
+        } else if (saved?.pitch || saved?.hooks?.length) {
+            ideas = `
+                ${saved.pitch ? `<p class="uix-pitch">${esc(saved.pitch)}</p>` : ''}
+                ${(saved.hooks ?? []).map((k, i) => `
+                    <div class="uix-hook">
+                        <b>${esc(k.title)}</b>
+                        ${k.idea ? `<p>${esc(k.idea)}</p>` : ''}
+                        ${k.leads ? `<p class="uix-leads"><i class="fa-solid fa-route"></i> ${esc(k.leads)}</p>` : ''}
+                        <button type="button" class="uix-play" data-hook="${i}"><i class="fa-solid fa-play"></i> Play this</button>
+                    </div>`).join('')}
+                ${saved.error ? `<p class="uix-pitch-err">The last retry failed: ${esc(saved.error)}</p>` : ''}`;
+        } else if (saved?.error) {
+            ideas = `<p class="uix-pitch-err">Couldn't write ideas: ${esc(saved.error)} Check that you're connected, then retry.</p>`;
+        } else {
+            ideas = '<p class="uix-pitch-err">No ideas yet.</p>';
+        }
+        const panel = $('.uix-menu-panel', els.menu);
+        panel.innerHTML = `
+            <div class="uix-grab"></div>
+            <div class="uix-prof-head">
+                ${portrait(e, 'uix-prof-pic')}
+                <div class="uix-prof-info">
+                    <b>${esc(ch.name)}</b>
+                    ${ch.date_last_chat ? `<small>Last played ${esc(ago(Number(ch.date_last_chat)))}</small>` : '<small>Not played yet</small>'}
+                    ${tags.length ? `<div class="uix-prof-tags">${tags.slice(0, 6).map(t => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
+                    <div class="uix-prof-actions">
+                        <button type="button" class="uix-prof-chat" data-open="char:${index}"><i class="fa-solid fa-comment"></i> Chat</button>
+                        <button type="button" class="uix-barlike${likes ? ' uix-liked' : ''}" data-like="${esc(ch.avatar)}">${esc(s.likeIcon)}${likes ? ` <b>${likes}</b>` : ''}</button>
+                        <button type="button" class="uix-icon" data-act="card" title="Edit card"><i class="fa-solid fa-pen"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="uix-ideas-head">
+                <h3>Story ideas</h3>
+                ${saved?.at && !busy ? `<small>${esc(ago(saved.at))}</small>` : ''}
+                <button type="button" class="uix-retry" data-act="retry"${busy ? ' disabled' : ''}><i class="fa-solid fa-rotate"></i> Retry</button>
+            </div>
+            ${ideas}`;
+    }
+
+    // "Play this": opens the chat and drafts the idea as an out-of-character
+    // note in the message box, ready to edit or send.
+    async function playHook(i) {
+        const index = profileFor;
+        const ch = h.ctx().characters?.[index];
+        const hook = pitches()[ch?.avatar]?.hooks?.[i];
+        if (!ch || !hook) return;
+        closeMenu();
+        await open(`char:${index}`);
+        const ta = document.getElementById('send_textarea');
+        if (ta) ta.value = '';
+        insert(`(OOC: Let's play this: ${hook.title}. ${hook.idea}${hook.leads ? ` It could lead to: ${hook.leads}` : ''})`);
+    }
+
     // ---------- input handling ----------
 
     async function onClick(event) {
-        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona]');
+        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook]');
         if (!t) return;
         if (t.dataset.like) {
             event.stopPropagation();
@@ -569,7 +745,12 @@ export function createStage(h) {
             t.classList.add('uio-pop');
             return;
         }
-        if (t.dataset.open) return open(t.dataset.open);
+        if (t.dataset.profile !== undefined) return profileSheet(Number(t.dataset.profile));
+        if (t.dataset.hook !== undefined) return playHook(Number(t.dataset.hook));
+        if (t.dataset.open) {
+            closeMenu();
+            return open(t.dataset.open);
+        }
         if (t.dataset.sort) {
             settings().stageSort = t.dataset.sort;
             h.save();
@@ -612,6 +793,13 @@ export function createStage(h) {
             case 'new': return newSheet();
             case 'persona': return personaSheet();
             case 'card': closeMenu(); return openCard();
+            case 'who': {
+                const who = current();
+                if (who?.type === 'char') return profileSheet(Number(who.id));
+                closeMenu();
+                return openCard();
+            }
+            case 'retry': return generatePitch(profileFor, true);
             case 'effects': closeMenu(); return clickId('sfx-toggle');
             case 'closechat':
                 closeMenu();
@@ -704,6 +892,7 @@ export function createStage(h) {
         refresh(what) {
             if (!state.on || !els) return;
             if (what === 'effects') return renderEffects();
+            if (profileFor !== null && els.menu.classList.contains('uix-open')) renderProfile();
             if (what === 'persona') {
                 renderPersonaChip();
                 if (state.view === 'home') renderHome();
