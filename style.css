@@ -1433,3 +1433,15 @@ body.uio-chrome .list-group {
     font-size: 0.72em;
     font-weight: 600;
 }
+
+
+/* ===================== Fit to the real screen (normal mode) ===================== */
+/* On phones SillyTavern sizes the chat column with 100dvh, which some browsers
+   report taller than the visible screen, pushing the message box down and
+   cutting off what's under it. --uio-vh is the measured visible height. */
+@media screen and (max-width: 1000px) {
+    body.uio-on:not(.uix) #sheld {
+        height: calc(var(--uio-vh, 100dvh) - var(--topBarBlockSize)) !important;
+        max-height: calc(var(--uio-vh, 100dvh) - var(--topBarBlockSize)) !important;
+    }
+}

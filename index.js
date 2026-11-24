@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.3.0';
+const VERSION = '2.3.1';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
@@ -311,6 +311,20 @@ function makeLike(avatar, where) {
     paintLike(btn);
     return btn;
 }
+
+// ---------- fitting the chat to the real screen ----------
+// Some phone browsers report the "visible screen height" CSS unit (100dvh)
+// taller than what's actually visible, which pushes the bottom of the chat
+// (the message box and anything under it) off screen. The real visible
+// height is measured here and handed to CSS as --uio-vh.
+function fitViewport() {
+    const h = Math.round(window.innerHeight || document.documentElement.clientHeight || 0);
+    if (h > 0) document.documentElement.style.setProperty('--uio-vh', `${h}px`);
+}
+fitViewport();
+window.addEventListener('resize', fitViewport);
+window.visualViewport?.addEventListener('resize', fitViewport);
+window.addEventListener('orientationchange', () => setTimeout(fitViewport, 300));
 
 const stage = createStage({
     ctx,
