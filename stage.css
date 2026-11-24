@@ -1597,3 +1597,7 @@ body.uix #uio-snack {
 .uix-liked[hidden] {
     display: none;
 }
+
+.uix-wrapbox[hidden] {
+    display: none;
+}

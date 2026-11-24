@@ -156,6 +156,7 @@ export function createStage(h) {
             <div class="uix-home-body">
                 <h1 class="uix-greet"></h1>
                 <section class="uix-hero"></section>
+                <section class="uix-wrapbox"></section>
                 <section class="uix-liked"></section>
                 <section class="uix-suggest"></section>
                 <div class="uix-searchbar">
@@ -267,6 +268,25 @@ export function createStage(h) {
         }
 
         const s = settings();
+        // Wrapped banner, coloured by what likes are called
+        const wrapEl = $('.uix-wrapbox', els.home);
+        const totalLikes = all.reduce((a, e) => a + e.likes, 0);
+        if (h.wrapped && totalLikes > 0) {
+            const last = h.wrapped.list()[0];
+            const fresh = h.wrapped.newSinceLast();
+            const many = /s$/i.test(s.likeLabel) ? s.likeLabel : `${s.likeLabel}s`;
+            wrapEl.hidden = false;
+            wrapEl.innerHTML = `<button type="button" class="uix-wrap-banner" data-act="wrapped">
+                <span class="uix-wrap-icon">${esc(s.likeIcon)}</span>
+                <span><b>Your ${esc(s.likeLabel)} Wrapped</b>
+                <small>${last
+                    ? `Last one ${esc(ago(last.at))}${fresh > 0 ? ` · ${fresh} new ${esc(many.toLowerCase())} since` : ''}`
+                    : `See what your ${totalLikes} ${esc(many.toLowerCase())} say about you`}</small></span>
+                <i class="fa-solid fa-chevron-right"></i></button>`;
+            h.paintTheme?.(wrapEl.firstElementChild);
+        } else {
+            wrapEl.hidden = true;
+        }
         const liked = all.filter(e => e.likes > 0).sort((a, b) => b.likes - a.likes).slice(0, 10);
         const likedEl = $('.uix-liked', els.home);
         likedEl.hidden = !liked.length;
@@ -1236,6 +1256,7 @@ export function createStage(h) {
             case 'persona': return personaSheet();
             case 'card': closeMenu(); return openCard();
             case 'cast': return castSheet();
+            case 'wrapped': return h.wrapped?.make();
             case 'who': {
                 const who = current();
                 if (who?.type === 'char') return profileSheet(Number(who.id));

@@ -4,11 +4,12 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.4.0';
+const VERSION = '2.5.0';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
 import { ask, cut, personaInfo, BLUNT, PRONOUNS } from './ai.js';
+import { createWrapped, wrappedTheme } from './wrapped.js';
 
 // Stage mode's stylesheet loads only with the module, next to this file.
 (() => {
@@ -16,6 +17,10 @@ import { ask, cut, personaInfo, BLUNT, PRONOUNS } from './ai.js';
     link.rel = 'stylesheet';
     link.href = new URL('./stage.css', import.meta.url).href;
     document.head.appendChild(link);
+    const wrapCss = document.createElement('link');
+    wrapCss.rel = 'stylesheet';
+    wrapCss.href = new URL('./wrapped.css', import.meta.url).href;
+    document.head.appendChild(wrapCss);
 })();
 
 const STYLES = {
@@ -327,6 +332,46 @@ window.addEventListener('resize', fitViewport);
 window.visualViewport?.addEventListener('resize', fitViewport);
 window.addEventListener('orientationchange', () => setTimeout(fitViewport, 300));
 
+const wrapped = createWrapped({
+    ctx,
+    settings,
+    save,
+    likeCount,
+    mostLabel,
+    tagNamesOf: (key) => tagNamesOf(key),
+    escapeHtml,
+    fullImageUrl: (src) => fullImageUrl(src),
+});
+
+// Gives an element the Wrapped colours for the current like name.
+function paintTheme(el) {
+    if (!el) return;
+    const t = wrappedTheme(settings().likeLabel, settings().likeIcon);
+    el.style.setProperty('--w-a', t.a);
+    el.style.setProperty('--w-b', t.b);
+    el.style.setProperty('--w-c', t.c);
+    el.style.setProperty('--w-glow', t.glow);
+}
+
+function renderRecaps() {
+    const box = document.getElementById('uio-recaps');
+    if (!box) return;
+    paintTheme(document.getElementById('uio-settings'));
+    const btn = document.getElementById('uio-wrap');
+    if (btn) btn.innerHTML = `${escapeHtml(settings().likeIcon)} Your ${escapeHtml(settings().likeLabel)} Wrapped`;
+    const list = wrapped.list();
+    box.innerHTML = list.length
+        ? list.map((r, i) => `<div class="uio-recap-row" data-recap="${i}" title="Replay this recap">
+            <span>${escapeHtml(r.icon ?? '♥')}</span><b>${escapeHtml(r.ai?.title || 'Recap')}</b>
+            <small>${new Date(r.at).toLocaleDateString()} · ${r.stats?.total ?? 0}</small></div>`).join('')
+        : '<small class="uio-muted">No recaps yet. Each one is saved, and the next compares itself to it.</small>';
+}
+
+document.addEventListener('uio:recap', () => {
+    renderRecaps();
+    stage.refresh('cards');
+});
+
 const stage = createStage({
     ctx,
     settings,
@@ -335,6 +380,8 @@ const stage = createStage({
     likeCount,
     mostLabel,
     likeInsights,
+    wrapped,
+    paintTheme,
     like: (avatar) => setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name, 'tap'),
     fullImageUrl: (src) => fullImageUrl(src),
     reapply: () => {
@@ -625,6 +672,7 @@ function renderInsights() {
 
 function renderTracker() {
     renderInsights();
+    renderRecaps();
     const box = document.getElementById('uio-tracker');
     if (!box) return;
     const s = settings();
@@ -688,6 +736,8 @@ function buildSettings() {
                     <button type="button" class="menu_button" id="uio-undo" title="Undo the last change"><i class="fa-solid fa-rotate-left"></i> Undo</button>
                     <button type="button" class="menu_button" id="uio-reset-all" title="Set every count to zero"><i class="fa-solid fa-trash-can"></i> Reset all</button>
                 </div>
+                <button type="button" class="menu_button uio-wrap-btn" id="uio-wrap"></button>
+                <div id="uio-recaps" class="uio-recaps"></div>
                 <div id="uio-insights"></div>
                 <div id="uio-tracker"></div>
             </div>
@@ -725,6 +775,11 @@ function buildSettings() {
         const avatar = btn.closest('[data-avatar]').dataset.avatar;
         if (btn.dataset.t === 'reset') setLikes(avatar, 0, null, 'reset');
         else setLikes(avatar, likeCount(avatar) + Number(btn.dataset.t), characterByAvatar(avatar)?.name);
+    });
+    wrap.querySelector('#uio-wrap').addEventListener('click', () => wrapped.make());
+    wrap.querySelector('#uio-recaps').addEventListener('click', (event) => {
+        const row = event.target.closest('[data-recap]');
+        if (row) wrapped.replay(Number(row.dataset.recap));
     });
     wrap.querySelector('#uio-insights').addEventListener('click', async (event) => {
         const pick = event.target.closest('[data-pick]');
