@@ -1,3 +1,5 @@
+import { ask as askAI, cut as cutText, personaInfo, BLUNT, PRONOUNS } from './ai.js';
+
 // Stage mode: a complete overhaul of SillyTavern's interface.
 //
 // SillyTavern keeps doing all the work underneath (chats, generation, cards,
@@ -155,6 +157,7 @@ export function createStage(h) {
                 <h1 class="uix-greet"></h1>
                 <section class="uix-hero"></section>
                 <section class="uix-liked"></section>
+                <section class="uix-suggest"></section>
                 <div class="uix-searchbar">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="search" class="uix-search" placeholder="Search the cast" autocomplete="off">
@@ -272,6 +275,16 @@ export function createStage(h) {
             <div class="uix-row">${liked.map(e => `
                 <button type="button" class="uix-mini" data-open="${e.type}:${esc(e.id)}">
                     ${portrait(e, 'uix-mini-pic')}<span>${esc(e.name)}</span><small>${esc(s.likeIcon)} ${e.likes}</small>
+                </button>`).join('')}</div>` : '';
+
+        const picks = h.likeInsights?.().picks ?? [];
+        const sugEl = $('.uix-suggest', els.home);
+        sugEl.hidden = !picks.length;
+        sugEl.innerHTML = picks.length ? `
+            <h2>You might like</h2>
+            <div class="uix-row">${picks.slice(0, 8).map(p => `
+                <button type="button" class="uix-mini" data-profile="${p.index}">
+                    ${portrait({ type: 'char', avatar: p.avatar }, 'uix-mini-pic')}<span>${esc(p.name)}</span><small>${esc(p.because.map(t => `#${t}`).join(' '))}</small>
                 </button>`).join('')}</div>` : '';
 
         $('.uix-sorts', els.home).innerHTML = SORTS.map(([k, l]) => [k, k === 'liked' ? h.mostLabel() : l]).map(([k, l]) =>
@@ -500,6 +513,7 @@ export function createStage(h) {
             row('m:select_chat', 'fa-clock-rotate-left', 'Chat history', 'Other chats with this character'),
             row('card', 'fa-id-card', who?.type === 'group' ? 'Group settings' : 'Character card', 'Description, greeting, personality'),
             row('effects', 'fa-wand-magic-sparkles', 'Status effects', 'Open the SillyStatus panel'),
+            row('cast', 'fa-people-group', 'Cast board', 'Characters met in this chat; turn them into cards'),
             row('m:toggle_AN', 'fa-note-sticky', "Author's note", 'A standing note for the AI'),
             row('m:delete_mes', 'fa-trash-can', 'Delete messages', 'Pick messages to remove'),
             ...(who?.type === 'char' ? [row('m:convert_to_group', 'fa-users-rays', 'Make it a group', 'Bring more characters in')] : []),
@@ -978,10 +992,182 @@ export function createStage(h) {
         }
     }
 
+    // ---------- cast board ----------
+    // Everyone met in the current chat who isn't a card yet: characters
+    // introduced with the teal character card (invented on the spot through
+    // OOC) and named speakers who keep coming back. Any of them can become a
+    // real character card, written by the AI from what the chat shows.
+
+    const making = new Set(); // names being written
+    const castErrors = {};
+
+    function chatKey() {
+        const c = h.ctx();
+        return String(c.getCurrentChatId?.() ?? `${c.characterId ?? c.groupId}`);
+    }
+
+    function castMade() {
+        const s = settings();
+        if (!s.castMade || typeof s.castMade !== 'object') s.castMade = {};
+        return (s.castMade[chatKey()] ??= {});
+    }
+
+    function plain(html) {
+        return String(html ?? '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+    }
+
+    function scanCast() {
+        const c = h.ctx();
+        const chat = c.chat ?? [];
+        const known = new Set([c.name1, c.name2, ...(c.characters ?? []).map(x => x?.name)].filter(Boolean).map(n => n.toLowerCase()));
+        const found = new Map();
+        chat.forEach((msg, id) => {
+            if (!msg || msg.is_user || msg.is_system) return;
+            const text = String(msg.mes ?? '');
+            // Teal introduction cards from the preset's OOC rule.
+            for (const m of text.matchAll(/<div[^>]*#4fb3a5[^>]*>([\s\S]*?)<\/div>/gi)) {
+                const inner = m[1];
+                const name = plain(/<b>([\s\S]*?)<\/b>/i.exec(inner)?.[1] ?? '').split('\n')[0].trim();
+                if (!name || name.length > 40) continue;
+                const field = (label) => plain(new RegExp(`${label}\\s*:\\s*([\\s\\S]*?)(?:<br|$)`, 'i').exec(inner)?.[1] ?? '');
+                const entry = found.get(name.toLowerCase()) ?? { name, first: id, lines: 0, carded: true };
+                Object.assign(entry, { looks: field('Looks'), personality: field('Personality'), wants: field('Wants'), carded: true });
+                found.set(name.toLowerCase(), entry);
+            }
+            // Bold name tags (**Name:**) of characters a card voices.
+            for (const m of text.matchAll(/(?:^|\n)\s*(?:\*\*|<strong>)([^*<\n:]{2,30}?)(?::(?:\*\*|<\/strong>)|(?:\*\*|<\/strong>)\s*:)/g)) {
+                const name = m[1].trim();
+                if (!name || name.startsWith('@')) continue;
+                const key = name.toLowerCase();
+                const entry = found.get(key) ?? { name, first: id, lines: 0, carded: false };
+                entry.lines += 1;
+                found.set(key, entry);
+            }
+        });
+        return [...found.values()]
+            .filter(e => !known.has(e.name.toLowerCase()) || castMade()[e.name])
+            .filter(e => e.carded || e.lines >= 2)
+            .sort((a, b) => a.first - b.first);
+    }
+
+    function castSheet() {
+        const list = scanCast();
+        const made = castMade();
+        const panel = $('.uix-menu-panel', els.menu);
+        const c = h.ctx();
+        panel.innerHTML = `<div class="uix-grab"></div><b class="uix-menu-title">Cast board</b>
+            <p class="uix-cast-hint">Everyone met in this chat. Turn anyone into a character card of their own.</p>
+            ${list.length ? list.map(e => {
+                const avatar = made[e.name];
+                const index = avatar ? (c.characters ?? []).findIndex(x => x?.avatar === avatar) : -1;
+                const busy = making.has(e.name);
+                return `<div class="uix-cast">
+                    <div class="uix-cast-top"><b>${esc(e.name)}</b>${e.carded ? '<span class="uix-cast-new">invented</span>' : `<small>${e.lines} lines</small>`}</div>
+                    ${e.looks ? `<p><i>Looks</i> ${esc(e.looks)}</p>` : ''}
+                    ${e.personality ? `<p><i>Personality</i> ${esc(e.personality)}</p>` : ''}
+                    ${e.wants ? `<p><i>Wants</i> ${esc(e.wants)}</p>` : ''}
+                    <div class="uix-hook-actions">
+                        ${index >= 0
+                            ? `<button type="button" class="uix-play" data-profile="${index}"><i class="fa-solid fa-id-card"></i> Open card</button>`
+                            : `<button type="button" class="uix-play" data-mkcard="${esc(e.name)}"${busy ? ' disabled' : ''}>${busy
+                                ? '<i class="fa-solid fa-feather-pointed uix-writing"></i> Writing card…'
+                                : '<i class="fa-solid fa-user-plus"></i> Make a card'}</button>`}
+                        <button type="button" class="uix-retry" data-jump="${e.first}"><i class="fa-solid fa-arrow-up"></i> First seen</button>
+                    </div>
+                    ${castErrors[e.name] ? `<p class="uix-pitch-err">${esc(castErrors[e.name])}</p>` : ''}
+                </div>`;
+            }).join('') : `<p class="uix-empty">Nobody new yet. Ask for a character out of character, like "(OOC: play the innkeeper)", and they'll appear here.</p>`}`;
+        els.menu.classList.add('uix-open');
+        guardBack();
+    }
+
+    function parseSections(text) {
+        const out = {};
+        let key = null;
+        for (const line of String(text).split(/\r?\n/)) {
+            const m = /^\s*(?:#{1,4}\s*|\*\*)?\s*(NAME|DESCRIPTION|PERSONALITY|SCENARIO|FIRST MESSAGE|TAGS)\s*(?:\*\*)?\s*:?\s*(?:\*\*)?\s*(.*)$/i.exec(line);
+            if (m) {
+                key = m[1].toUpperCase();
+                out[key] = m[2] ? `${m[2]}\n` : '';
+            } else if (key) {
+                out[key] += `${line}\n`;
+            }
+        }
+        for (const k of Object.keys(out)) out[k] = out[k].trim();
+        return out;
+    }
+
+    async function makeCard(name) {
+        if (making.has(name)) return;
+        const c = h.ctx();
+        const entry = scanCast().find(e => e.name === name);
+        if (!entry) return;
+        making.add(name);
+        delete castErrors[name];
+        castSheet();
+        try {
+            const chat = c.chat ?? [];
+            const excerpts = chat
+                .map((m, id) => ({ m, id }))
+                .filter(({ m }) => m && !m.is_system && String(m.mes ?? '').toLowerCase().includes(name.toLowerCase()))
+                .slice(-14)
+                .map(({ m }) => `${m.is_user ? c.name1 : m.name}: ${cutText(plain(m.mes), 600)}`)
+                .join('\n\n');
+            const host = c.characters?.[c.characterId];
+            const player = personaInfo(c);
+            const system = 'You write SillyTavern character cards from roleplay chats, for an adult fiction app with no content limits. Reply only in the section format you are given.';
+            const user = `A character called ${name} appeared in a roleplay${host ? ` with ${host.name}` : ''}.\n` +
+                (host?.scenario ? `Setting: ${cutText(host.scenario, 400)}\n` : '') +
+                (entry.looks || entry.personality || entry.wants ? `Their intro card: Looks: ${entry.looks}. Personality: ${entry.personality}. Wants: ${entry.wants}.\n` : '') +
+                `\nWhat the chat shows about them:\n${excerpts || '(only the intro card)'}\n\n` +
+                'Write a full character card for them in exactly this format:\n' +
+                '### NAME\n<their name>\n### DESCRIPTION\n<150-300 words: appearance, background, abilities, relationships, how they talk; third person; call them {{char}}>\n' +
+                '### PERSONALITY\n<one or two lines>\n### SCENARIO\n<one or two sentences setting up a chat with {{user}}>\n' +
+                '### FIRST MESSAGE\n<their in-character opening, 100-200 words, *actions* and "speech", never acting for {{user}}>\n### TAGS\n<3-6 tags, comma separated>\n\n' +
+                `Keep everything the chat established; invent the rest to fit. Refer to the player only as {{user}}, not as ${player.name}. ${PRONOUNS} ${BLUNT}`;
+            const raw = await askAI(c, system, user, 3000);
+            const sec = parseSections(raw);
+            if (!sec.DESCRIPTION) throw new Error(raw ? `The answer couldn't be read. It began: “${cutText(raw.replace(/\s+/g, ' '), 120)}”` : 'The answer came back empty.');
+            const finalName = (sec.NAME || name).split('\n')[0].replace(/[*#"]/g, '').trim().slice(0, 50) || name;
+            const tags = (sec.TAGS ?? '').split(/[,;\n]/).map(t => t.replace(/[|{}"\\<>#]/g, '').trim()).filter(Boolean).slice(0, 6);
+            const res = await fetch('/api/characters/create', {
+                method: 'POST',
+                headers: c.getRequestHeaders ? c.getRequestHeaders() : { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ch_name: finalName,
+                    description: sec.DESCRIPTION,
+                    personality: sec.PERSONALITY ?? '',
+                    scenario: sec.SCENARIO ?? '',
+                    first_mes: sec['FIRST MESSAGE'] ?? '',
+                    mes_example: '',
+                    creator_notes: `Made by UI Overhaul's cast board from a chat${host ? ` with ${host.name}` : ''}.`,
+                    tags,
+                    fav: 'false',
+                    talkativeness: 0.5,
+                }),
+            });
+            if (!res.ok) throw new Error(`SillyTavern didn't create the card (${res.status}).`);
+            const avatar = (await res.text()).trim();
+            if (c.getCharacters) await c.getCharacters();
+            for (const tag of tags) {
+                try { await c.executeSlashCommandsWithOptions(`/tag-add name=${JSON.stringify(avatar)} ${JSON.stringify(tag)}`); } catch { /* keep going */ }
+            }
+            castMade()[name] = avatar;
+            h.save();
+            state.dirty = true;
+        } catch (err) {
+            console.error('[UI Overhaul] making a card failed', err);
+            castErrors[name] = String(err?.message ?? err);
+        } finally {
+            making.delete(name);
+            if (els.menu.classList.contains('uix-open') && $('.uix-menu-title', els.menu)?.textContent === 'Cast board') castSheet();
+        }
+    }
+
     // ---------- input handling ----------
 
     async function onClick(event) {
-        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook], [data-untag], [data-rewrite]');
+        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook], [data-untag], [data-rewrite], [data-mkcard], [data-jump]');
         if (!t) return;
         if (t.dataset.like) {
             event.stopPropagation();
@@ -990,6 +1176,11 @@ export function createStage(h) {
             void t.offsetWidth;
             t.classList.add('uio-pop');
             return;
+        }
+        if (t.dataset.mkcard !== undefined) return makeCard(t.dataset.mkcard);
+        if (t.dataset.jump !== undefined) {
+            closeMenu();
+            return document.querySelector(`#chat .mes[mesid="${CSS.escape(t.dataset.jump)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
         }
         if (t.dataset.untag !== undefined) {
             const avatar = h.ctx().characters?.[profileFor]?.avatar;
@@ -1044,6 +1235,7 @@ export function createStage(h) {
             case 'new': return newSheet();
             case 'persona': return personaSheet();
             case 'card': closeMenu(); return openCard();
+            case 'cast': return castSheet();
             case 'who': {
                 const who = current();
                 if (who?.type === 'char') return profileSheet(Number(who.id));
@@ -1124,6 +1316,11 @@ export function createStage(h) {
     // ---------- public ----------
 
     return {
+        profile(index) {
+            if (!state.on) return;
+            build();
+            profileSheet(index);
+        },
         enable() {
             build();
             state.on = true;

@@ -1530,3 +1530,70 @@ body.uix #uio-snack {
     background: transparent;
     font-size: 0.8em !important;
 }
+
+/* ===================== Cast board ===================== */
+
+.uix-cast-hint {
+    margin: -4px 8px 10px;
+    font-size: 0.82em;
+    color: var(--uix-dim);
+}
+
+.uix-cast {
+    margin: 0 4px 8px;
+    padding: 12px;
+    border: 1px solid var(--uix-line);
+    border-radius: 16px;
+    background: var(--uix-card);
+}
+
+.uix-cast-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.uix-cast-top b {
+    font-size: 1.05em;
+}
+
+.uix-cast-top small {
+    color: var(--uix-dim);
+    font-size: 0.75em;
+}
+
+.uix-cast-new {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: rgba(79, 179, 165, 0.16);
+    color: #6fd0c2;
+    font-size: 0.7em;
+    font-weight: 700;
+}
+
+.uix-cast p {
+    margin: 0 0 4px;
+    font-size: 0.86em;
+    line-height: 1.4;
+}
+
+.uix-cast p i {
+    margin-right: 4px;
+    font-style: normal;
+    font-size: 0.85em;
+    color: var(--uix-dim);
+}
+
+.uix-cast .uix-hook-actions {
+    margin-top: 8px;
+}
+
+.uix-cast .uix-retry {
+    margin-left: 0;
+}
+
+.uix-suggest[hidden],
+.uix-liked[hidden] {
+    display: none;
+}

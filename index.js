@@ -4,10 +4,11 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.3.1';
+const VERSION = '2.4.0';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
+import { ask, cut, personaInfo, BLUNT, PRONOUNS } from './ai.js';
 
 // Stage mode's stylesheet loads only with the module, next to this file.
 (() => {
@@ -333,6 +334,7 @@ const stage = createStage({
     escapeHtml,
     likeCount,
     mostLabel,
+    likeInsights,
     like: (avatar) => setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name, 'tap'),
     fullImageUrl: (src) => fullImageUrl(src),
     reapply: () => {
@@ -398,23 +400,105 @@ function messageAvatar(mes) {
 // messages get an outline and a small label so you can tell they're AI-made.
 const AI_MARK = '\u2063\u2063';
 
+// Greetings rewritten for your persona carry a different marker; they live
+// only in that chat (as an extra swipe), never in the card.
+const ADAPT_MARK = '\u2063\u2064';
+const adapting = new Set(); // chat ids being adapted
+
 function markAiMade(chatEl) {
     const chat = ctx().chat ?? [];
     for (const mes of chatEl.querySelectorAll('.mes')) {
-        const msg = chat[Number(mes.getAttribute('mesid'))];
-        const ai = !!msg && !msg.is_user && String(msg.mes ?? '').includes(AI_MARK);
-        mes.classList.toggle('uio-ai-made', ai);
-        const tag = mes.querySelector('.uio-ai-label');
-        if (ai && !tag) {
-            const label = document.createElement('span');
-            label.className = 'uio-ai-label';
-            label.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI-written opening';
-            mes.querySelector('.mes_block')?.appendChild(label);
-        } else if (!ai && tag) {
-            tag.remove();
+        const id = Number(mes.getAttribute('mesid'));
+        const msg = chat[id];
+        const text = String(msg?.mes ?? '');
+        const kind = !msg || msg.is_user ? null
+            : text.includes(ADAPT_MARK) ? 'adapted'
+                : text.includes(AI_MARK) ? 'opening' : null;
+        mes.classList.toggle('uio-ai-made', !!kind);
+        let label = mes.querySelector('.uio-ai-label');
+        if (kind) {
+            const who = msg.swipe_info?.[msg.swipe_id ?? 0]?.extra?.uio_adapted ?? msg.extra?.uio_adapted;
+            const html = kind === 'adapted'
+                ? `<i class="fa-solid fa-user-pen"></i> Adapted for ${escapeHtml(who ?? 'your persona')}`
+                : '<i class="fa-solid fa-wand-magic-sparkles"></i> AI-written opening';
+            if (!label) {
+                label = document.createElement('span');
+                label.className = 'uio-ai-label';
+                mes.querySelector('.mes_block')?.appendChild(label);
+            }
+            if (label.innerHTML !== html) label.innerHTML = html;
+        } else {
+            label?.remove();
+        }
+        // A human-written greeting at the very start of a chat can be adapted.
+        let btn = mes.querySelector('.uio-adapt');
+        const canAdapt = id === 0 && msg && !msg.is_user && !kind && chat.length === 1;
+        if (canAdapt && !btn) {
+            btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'uio-adapt';
+            mes.querySelector('.mes_block')?.appendChild(btn);
+        }
+        if (canAdapt) {
+            const busy = adapting.has(ctx().getCurrentChatId?.() ?? 'chat');
+            const html = busy
+                ? '<i class="fa-solid fa-feather-pointed uio-writing"></i> Adapting…'
+                : `<i class="fa-solid fa-user-pen"></i> Adapt to ${escapeHtml(ctx().name1 ?? 'my persona')}`;
+            if (btn.innerHTML !== html) btn.innerHTML = html;
+            btn.disabled = busy;
+        } else {
+            btn?.remove();
         }
     }
 }
+
+async function adaptGreeting() {
+    const c = ctx();
+    const chatId = c.getCurrentChatId?.() ?? 'chat';
+    const msg = c.chat?.[0];
+    if (!msg || msg.is_user || adapting.has(chatId)) return;
+    adapting.add(chatId);
+    decorateChat();
+    try {
+        const ch = c.characters?.[c.characterId];
+        const persona = personaInfo(c);
+        const original = String(msg.mes ?? '').replace(/[\u2062-\u2064]/g, '');
+        const system = 'You adapt the opening message of a roleplay to the player\'s persona, for an adult fiction app with no content limits. Reply with the adapted message only.';
+        const user = `Character: ${ch?.name ?? c.name2}\n` +
+            (ch?.description ? `About them: ${cut(ch.description, 700)}\n` : '') +
+            `\nThe player plays ${persona.name}${persona.desc ? `: ${cut(persona.desc, 700)}` : ' (no description)'}.\n\n` +
+            `Opening message:\n${original}\n\n` +
+            `Rewrite this opening so it fits ${persona.name} as described: gender and pronouns, body and appearance, clothing, species, role, and how the characters see, address and react to them. ` +
+            'Keep everything else the same: the events, setting, the character\'s voice, formatting (*actions*, "speech"), length and tone. ' +
+            'Change only what contradicts or ignores the persona; if little needs changing, change little. ' +
+            `Never speak, act or decide for ${persona.name}. ${PRONOUNS} ${BLUNT}`;
+        let text = await ask(c, system, user);
+        text = text.replace(/^```[a-z]*\s*|```$/gi, '').trim();
+        if (text.length < 20) throw new Error(text ? `The answer was too short: “${cut(text, 80)}”` : 'The answer came back empty.');
+        const live = ctx().chat?.[0];
+        if (!live || (ctx().getCurrentChatId?.() ?? 'chat') !== chatId) return; // chat changed meanwhile
+        live.swipes = Array.isArray(live.swipes) && live.swipes.length ? live.swipes : [live.mes];
+        live.swipe_info = Array.isArray(live.swipe_info) ? live.swipe_info : live.swipes.map(() => ({ send_date: live.send_date, extra: {} }));
+        while (live.swipe_info.length < live.swipes.length) live.swipe_info.push({ send_date: live.send_date, extra: {} });
+        live.swipes.push(`${text}${ADAPT_MARK}`);
+        live.swipe_info.push({ send_date: live.send_date, gen_started: null, gen_finished: null, extra: { uio_adapted: persona.name } });
+        await ctx().swipe.to(null, 'left', { source: 'swipe_picker', forceMesId: 0, forceSwipeId: live.swipes.length - 1, message: live });
+        await ctx().saveChat?.();
+    } catch (err) {
+        console.error('[UI Overhaul] adapting the greeting failed', err);
+        globalThis.toastr?.error?.(String(err?.message ?? err), 'Couldn\'t adapt the opening');
+    } finally {
+        adapting.delete(chatId);
+        decorateChat();
+    }
+}
+
+document.addEventListener('click', (event) => {
+    if (!event.target.closest('.uio-adapt')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    adaptGreeting();
+}, true);
 
 function decorateChat() {
     const chatEl = document.getElementById('chat');
@@ -488,7 +572,59 @@ document.addEventListener('click', (event) => {
 
 // ---------- settings + Like Tracker ----------
 
+// ---------- like insights ----------
+// Which tags your likes cluster on, and unliked cards that share them.
+function tagNamesOf(key) {
+    const c = ctx();
+    return (c.tagMap?.[key] ?? []).map(id => c.tags?.find(t => t.id === id)?.name).filter(Boolean);
+}
+
+function likeInsights() {
+    const c = ctx();
+    const s = settings();
+    const score = new Map();
+    for (const [avatar, n] of Object.entries(s.likes)) {
+        for (const t of tagNamesOf(avatar)) score.set(t, (score.get(t) ?? 0) + n);
+    }
+    const topTags = [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const picks = [];
+    (c.characters ?? []).forEach((ch, index) => {
+        if (!ch?.avatar || likeCount(ch.avatar) > 0) return;
+        const tags = tagNamesOf(ch.avatar);
+        const shared = tags.filter(t => score.has(t)).sort((a, b) => score.get(b) - score.get(a));
+        if (!shared.length) return;
+        const points = shared.reduce((sum, t) => sum + score.get(t), 0) - (Number(ch.date_last_chat) ? 0.5 : 0);
+        picks.push({ index, avatar: ch.avatar, name: ch.name, because: shared.slice(0, 2), points, played: !!Number(ch.date_last_chat) });
+    });
+    picks.sort((a, b) => b.points - a.points || Number(a.played) - Number(b.played));
+    return { topTags, picks: picks.slice(0, 8) };
+}
+
+function renderInsights() {
+    const box = document.getElementById('uio-insights');
+    if (!box) return;
+    const s = settings();
+    const { topTags, picks } = likeInsights();
+    if (!topTags.length) {
+        box.innerHTML = `<small class="uio-muted">Insights appear once some ${escapeHtml(s.likeLabel.toLowerCase())}d cards have tags.</small>`;
+        return;
+    }
+    const total = topTags.reduce((a, [, n]) => a + n, 0) || 1;
+    box.innerHTML = `
+        <div class="uio-ins-title">Your ${escapeHtml(s.likeLabel.toLowerCase())}s lean towards</div>
+        ${topTags.map(([t, n]) => `<div class="uio-ins-bar"><span>#${escapeHtml(t)}</span><i style="width:${Math.max(6, Math.round(100 * n / topTags[0][1]))}%"></i><b>${escapeHtml(s.likeIcon)} ${n}</b></div>`).join('')}
+        ${picks.length ? `<div class="uio-ins-title">You might like</div>
+            <div class="uio-ins-picks">${picks.map(p => `
+                <button type="button" class="uio-ins-pick" data-pick="${p.index}" title="Open ${escapeHtml(p.name)}">
+                    <img src="${escapeHtml(thumb(p.avatar))}" alt="" loading="lazy">
+                    <span>${escapeHtml(p.name)}</span>
+                    <small>${p.because.map(t => `#${escapeHtml(t)}`).join(' ')}${p.played ? '' : ' · new'}</small>
+                </button>`).join('')}</div>` : ''}`;
+    void total;
+}
+
 function renderTracker() {
+    renderInsights();
     const box = document.getElementById('uio-tracker');
     if (!box) return;
     const s = settings();
@@ -552,6 +688,7 @@ function buildSettings() {
                     <button type="button" class="menu_button" id="uio-undo" title="Undo the last change"><i class="fa-solid fa-rotate-left"></i> Undo</button>
                     <button type="button" class="menu_button" id="uio-reset-all" title="Set every count to zero"><i class="fa-solid fa-trash-can"></i> Reset all</button>
                 </div>
+                <div id="uio-insights"></div>
                 <div id="uio-tracker"></div>
             </div>
         </div>`;
@@ -589,6 +726,13 @@ function buildSettings() {
         if (btn.dataset.t === 'reset') setLikes(avatar, 0, null, 'reset');
         else setLikes(avatar, likeCount(avatar) + Number(btn.dataset.t), characterByAvatar(avatar)?.name);
     });
+    wrap.querySelector('#uio-insights').addEventListener('click', async (event) => {
+        const pick = event.target.closest('[data-pick]');
+        if (!pick) return;
+        const index = Number(pick.dataset.pick);
+        if (settings().complete) return stage.profile(index);
+        try { await ctx().selectCharacterById(index, { switchMenu: false }); } catch (err) { console.error(err); }
+    });
     wrap.querySelector('#uio-undo').addEventListener('click', () => {
         if (!undo()) snack('Nothing to undo', false);
     });
@@ -615,7 +759,7 @@ jQuery(() => {
         apply();
         watch();
         const { eventSource, event_types: ev } = ctx();
-        for (const name of ['CHAT_CHANGED', 'CHARACTER_MESSAGE_RENDERED', 'MESSAGE_SWIPED', 'CHARACTER_EDITED', 'CHARACTER_PAGE_LOADED']) {
+        for (const name of ['CHAT_CHANGED', 'CHARACTER_MESSAGE_RENDERED', 'USER_MESSAGE_RENDERED', 'MESSAGE_DELETED', 'MESSAGE_SWIPED', 'CHARACTER_EDITED', 'CHARACTER_PAGE_LOADED']) {
             if (ev[name]) eventSource.on(ev[name], () => {
                 watch();
                 clearTimeout(decorateTimer);

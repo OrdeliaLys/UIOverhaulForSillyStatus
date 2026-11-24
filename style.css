@@ -1445,3 +1445,124 @@ body.uio-chrome .list-group {
         max-height: calc(var(--uio-vh, 100dvh) - var(--topBarBlockSize)) !important;
     }
 }
+
+/* ===================== Adapt an opening to your persona ===================== */
+
+.uio-adapt {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 6px 0 0;
+    padding: 5px 12px;
+    border: 1px solid var(--uio-accent-line, rgba(181, 108, 255, 0.45));
+    border-radius: 999px;
+    background: var(--uio-accent-soft, rgba(181, 108, 255, 0.16));
+    color: var(--uio-accent, #b56cff);
+    font: inherit;
+    font-size: 0.8em;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.uio-adapt:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
+
+.uio-writing {
+    animation: uio-writing 1.2s ease-in-out infinite;
+}
+
+@keyframes uio-writing {
+    50% { opacity: 0.3; transform: translateX(3px); }
+}
+
+/* ===================== Like insights ===================== */
+
+#uio-insights {
+    margin: 6px 0 10px;
+}
+
+.uio-ins-title {
+    margin: 8px 0 4px;
+    font-size: 0.8em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    opacity: 0.6;
+}
+
+.uio-ins-bar {
+    display: grid;
+    grid-template-columns: 9em 1fr auto;
+    align-items: center;
+    gap: 8px;
+    margin: 3px 0;
+    font-size: 0.88em;
+}
+
+.uio-ins-bar span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.uio-ins-bar i {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--uio-accent, #b56cff);
+    opacity: 0.8;
+}
+
+.uio-ins-bar b {
+    font-size: 0.9em;
+    font-variant-numeric: tabular-nums;
+}
+
+.uio-ins-picks {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.uio-ins-pick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 0 0 82px;
+    padding: 6px 4px;
+    border: 1px solid var(--uio-line, rgba(255, 255, 255, 0.09));
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.uio-ins-pick img {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uio-ins-pick span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78em;
+    font-weight: 600;
+}
+
+.uio-ins-pick small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.66em;
+    opacity: 0.6;
+}
