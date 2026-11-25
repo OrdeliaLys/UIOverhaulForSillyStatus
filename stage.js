@@ -216,6 +216,7 @@ export function createStage(h) {
         els = { home, bar, backstage, sheetHead, menu, quick };
 
         for (const root of [home, bar, backstage, sheetHead, menu]) root.addEventListener('click', onClick);
+        bindAccents();
         quick.addEventListener('click', onQuick);
         $('.uix-search', home).addEventListener('input', (e) => {
             state.query = e.target.value.trim().toLowerCase();
@@ -569,6 +570,7 @@ export function createStage(h) {
     }
 
     function closeMenu() {
+        accentSheetFor = null;
         els.menu.classList.remove('uix-open', 'uix-profile-open');
         profileFor = null;
         if (state.dirty && state.view === 'home') renderHome();
@@ -808,6 +810,7 @@ export function createStage(h) {
     function profileSheet(index) {
         const ch = h.ctx().characters?.[index];
         if (!ch) return;
+        accentSheetFor = null;
         profileFor = index;
         renderProfile();
         els.menu.classList.add('uix-open', 'uix-profile-open');
@@ -878,6 +881,9 @@ export function createStage(h) {
                     </div>
                 </div>
             </div>
+            ${h.accents ? `<button type="button" class="uix-accent-row" data-accentfor="card:${esc(ch.avatar)}" data-accentname="${esc(ch.name)}" data-accentindex="${index}">
+                <i class="fa-solid fa-language"></i><span>Accent</span><b>${esc(h.accents.describe(h.accents.get(h.accents.keyForCard(ch.avatar))))}</b><i class="fa-solid fa-chevron-right"></i>
+            </button>` : ''}
             <div class="uix-ideas-head">
                 <h3>Story ideas</h3>
                 ${saved?.at && !busy ? `<small>${esc(ago(saved.at))}</small>` : ''}
@@ -1012,6 +1018,32 @@ export function createStage(h) {
         }
     }
 
+    // ---------- accents ----------
+
+    let accentSheetFor = null; // { key, name, index, back }
+    const accentStates = {};
+
+    function accentSheet(spec) {
+        accentSheetFor = spec;
+        const panel = $('.uix-menu-panel', els.menu);
+        panel.innerHTML = `<div class="uix-grab"></div>
+            <div class="uix-acc-head">
+                ${spec.back !== undefined ? `<button type="button" class="uix-icon" data-act="accent-back"><i class="fa-solid fa-chevron-left"></i></button>` : ''}
+                <b class="uix-menu-title">${esc(spec.name)}'s accent</b>
+            </div>
+            ${h.accents.editorHtml(spec.key, spec.name, { ...(accentStates[spec.key] ?? {}), index: spec.index })}`;
+        els.menu.classList.add('uix-open');
+        guardBack();
+    }
+
+    function bindAccents() {
+        if (!h.accents || els.accentsBound) return;
+        els.accentsBound = true;
+        h.accents.bind(els.menu, () => {
+            if (accentSheetFor && els.menu.classList.contains('uix-open')) accentSheet(accentSheetFor);
+        }, (key) => (accentStates[key] ??= {}));
+    }
+
     // ---------- cast board ----------
     // Everyone met in the current chat who isn't a card yet: characters
     // introduced with the teal character card (invented on the spot through
@@ -1051,7 +1083,7 @@ export function createStage(h) {
                 if (!name || name.length > 40) continue;
                 const field = (label) => plain(new RegExp(`${label}\\s*:\\s*([\\s\\S]*?)(?:<br|$)`, 'i').exec(inner)?.[1] ?? '');
                 const entry = found.get(name.toLowerCase()) ?? { name, first: id, lines: 0, carded: true };
-                Object.assign(entry, { looks: field('Looks'), personality: field('Personality'), wants: field('Wants'), carded: true });
+                Object.assign(entry, { looks: field('Looks'), personality: field('Personality'), wants: field('Wants'), accent: field('Accent'), carded: true });
                 found.set(name.toLowerCase(), entry);
             }
             // Bold name tags (**Name:**) of characters a card voices.
@@ -1071,6 +1103,8 @@ export function createStage(h) {
     }
 
     function castSheet() {
+        accentSheetFor = null;
+        profileFor = null;
         const list = scanCast();
         const made = castMade();
         const panel = $('.uix-menu-panel', els.menu);
@@ -1086,6 +1120,16 @@ export function createStage(h) {
                     ${e.looks ? `<p><i>Looks</i> ${esc(e.looks)}</p>` : ''}
                     ${e.personality ? `<p><i>Personality</i> ${esc(e.personality)}</p>` : ''}
                     ${e.wants ? `<p><i>Wants</i> ${esc(e.wants)}</p>` : ''}
+                    ${h.accents ? (() => {
+                        const key = h.accents.keyForName(e.name);
+                        if (e.accent && !/^(none|-|n\/a)$/i.test(e.accent) && !h.accents.get(key)) {
+                            const strength = /thick|heavy|strong|broad/i.test(e.accent) ? 3 : /slight|light|faint|hint|mild|subtle/i.test(e.accent) ? 1 : 2;
+                            const accName = e.accent.replace(/\b(thick|heavy|strong|broad|slight|light|faint|mild|subtle)\b\s*/gi, '').trim() || e.accent;
+                            h.accents.set(key, { id: 'custom', strength, displayName: e.name, custom: { name: accName } });
+                        }
+                        return `<button type="button" class="uix-accent-row uix-accent-small" data-accentfor="${esc(key)}" data-accentname="${esc(e.name)}">
+                            <i class="fa-solid fa-language"></i><span>Accent</span><b>${esc(h.accents.describe(h.accents.get(key)))}</b><i class="fa-solid fa-chevron-right"></i></button>`;
+                    })() : ''}
                     <div class="uix-hook-actions">
                         ${index >= 0
                             ? `<button type="button" class="uix-play" data-profile="${index}"><i class="fa-solid fa-id-card"></i> Open card</button>`
@@ -1173,6 +1217,8 @@ export function createStage(h) {
                 try { await c.executeSlashCommandsWithOptions(`/tag-add name=${JSON.stringify(avatar)} ${JSON.stringify(tag)}`); } catch { /* keep going */ }
             }
             castMade()[name] = avatar;
+            const nameAccent = h.accents?.get(h.accents.keyForName(name));
+            if (nameAccent) h.accents.set(h.accents.keyForCard(avatar), { ...nameAccent, displayName: undefined });
             h.save();
             state.dirty = true;
         } catch (err) {
@@ -1187,7 +1233,7 @@ export function createStage(h) {
     // ---------- input handling ----------
 
     async function onClick(event) {
-        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook], [data-untag], [data-rewrite], [data-mkcard], [data-jump]');
+        const t = event.target.closest('[data-act], [data-open], [data-like], [data-sort], [data-tag], [data-drawer], [data-persona], [data-profile], [data-hook], [data-untag], [data-rewrite], [data-mkcard], [data-jump], [data-accentfor]');
         if (!t) return;
         if (t.dataset.like) {
             event.stopPropagation();
@@ -1196,6 +1242,15 @@ export function createStage(h) {
             void t.offsetWidth;
             t.classList.add('uio-pop');
             return;
+        }
+        if (t.dataset.accentfor !== undefined) {
+            const back = profileFor ?? (t.closest('.uix-cast') ? 'cast' : undefined);
+            return accentSheet({
+                key: t.dataset.accentfor,
+                name: t.dataset.accentname,
+                index: t.dataset.accentindex !== undefined ? Number(t.dataset.accentindex) : undefined,
+                back,
+            });
         }
         if (t.dataset.mkcard !== undefined) return makeCard(t.dataset.mkcard);
         if (t.dataset.jump !== undefined) {
@@ -1256,6 +1311,13 @@ export function createStage(h) {
             case 'persona': return personaSheet();
             case 'card': closeMenu(); return openCard();
             case 'cast': return castSheet();
+            case 'accent-back': {
+                const back = accentSheetFor?.back;
+                accentSheetFor = null;
+                if (back === 'cast') return castSheet();
+                if (typeof back === 'number') return profileSheet(back);
+                return closeMenu();
+            }
             case 'wrapped': return h.wrapped?.make();
             case 'who': {
                 const who = current();

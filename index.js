@@ -4,12 +4,13 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.5.0';
+const VERSION = '2.6.0';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
 import { ask, cut, personaInfo, BLUNT, PRONOUNS } from './ai.js';
 import { createWrapped, wrappedTheme } from './wrapped.js';
+import { createAccents } from './accents.js';
 
 // Stage mode's stylesheet loads only with the module, next to this file.
 (() => {
@@ -343,6 +344,37 @@ const wrapped = createWrapped({
     fullImageUrl: (src) => fullImageUrl(src),
 });
 
+const accents = createAccents({ ctx, settings, save, escapeHtml });
+const accentState = {};
+
+// Settings: accents for whoever is in the current chat, plus side characters.
+function renderAccentSettings() {
+    const box = document.getElementById('uio-accents');
+    if (!box) return;
+    const c = ctx();
+    const cast = [];
+    if (c.groupId) {
+        const g = c.groups?.find(x => String(x.id) === String(c.groupId));
+        for (const avatar of g?.members ?? []) {
+            const index = (c.characters ?? []).findIndex(x => x?.avatar === avatar);
+            if (index >= 0) cast.push({ index, ch: c.characters[index] });
+        }
+    } else if (c.characters?.[c.characterId]) {
+        cast.push({ index: Number(c.characterId), ch: c.characters[c.characterId] });
+    }
+    const side = Object.entries(settings().accents ?? {}).filter(([k]) => k.startsWith('name:'));
+    box.innerHTML = (cast.length ? cast.map(({ index, ch }) => `
+        <details class="uio-acc-who"${cast.length === 1 ? ' open' : ''}>
+            <summary><b>${escapeHtml(ch.name)}</b> <small>${escapeHtml(accents.describe(accents.get(accents.keyForCard(ch.avatar))))}</small></summary>
+            ${accents.editorHtml(accents.keyForCard(ch.avatar), ch.name, { ...(accentState[accents.keyForCard(ch.avatar)] ?? {}), index })}
+        </details>`).join('') : '<small class="uio-muted">Open a chat to set accents for its characters.</small>')
+        + (side.length ? `<div class="uio-ins-title">Side characters</div>${side.map(([k, a]) => `
+        <details class="uio-acc-who">
+            <summary><b>${escapeHtml(a.displayName ?? k.slice(5))}</b> <small>${escapeHtml(accents.describe(a))}</small></summary>
+            ${accents.editorHtml(k, a.displayName ?? k.slice(5), accentState[k] ?? {})}
+        </details>`).join('')}` : '');
+}
+
 // Gives an element the Wrapped colours for the current like name.
 function paintTheme(el) {
     if (!el) return;
@@ -382,6 +414,7 @@ const stage = createStage({
     likeInsights,
     wrapped,
     paintTheme,
+    accents,
     like: (avatar) => setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name, 'tap'),
     fullImageUrl: (src) => fullImageUrl(src),
     reapply: () => {
@@ -673,6 +706,7 @@ function renderInsights() {
 function renderTracker() {
     renderInsights();
     renderRecaps();
+    renderAccentSettings();
     const box = document.getElementById('uio-tracker');
     if (!box) return;
     const s = settings();
@@ -736,6 +770,9 @@ function buildSettings() {
                     <button type="button" class="menu_button" id="uio-undo" title="Undo the last change"><i class="fa-solid fa-rotate-left"></i> Undo</button>
                     <button type="button" class="menu_button" id="uio-reset-all" title="Set every count to zero"><i class="fa-solid fa-trash-can"></i> Reset all</button>
                 </div>
+                <b>Accents</b>
+                <small class="uio-muted">Give characters an accent you can hear: their first language's grammar, rhythm and sounds in every line they speak.</small>
+                <div id="uio-accents"></div>
                 <button type="button" class="menu_button uio-wrap-btn" id="uio-wrap"></button>
                 <div id="uio-recaps" class="uio-recaps"></div>
                 <div id="uio-insights"></div>
@@ -777,6 +814,7 @@ function buildSettings() {
         else setLikes(avatar, likeCount(avatar) + Number(btn.dataset.t), characterByAvatar(avatar)?.name);
     });
     wrap.querySelector('#uio-wrap').addEventListener('click', () => wrapped.make());
+    accents.bind(wrap.querySelector('#uio-accents'), renderAccentSettings, (key) => (accentState[key] ??= {}));
     wrap.querySelector('#uio-recaps').addEventListener('click', (event) => {
         const row = event.target.closest('[data-recap]');
         if (row) wrapped.replay(Number(row.dataset.recap));
@@ -821,6 +859,11 @@ jQuery(() => {
                 decorateTimer = setTimeout(decorateAll, 80);
             });
         }
+        // Accents: the prompt note follows the scene, refreshed before every reply.
+        for (const name of ['CHAT_CHANGED', 'GENERATION_STARTED', 'MESSAGE_RECEIVED', 'GROUP_UPDATED']) {
+            if (ev[name]) eventSource.on(ev[name], () => accents.update());
+        }
+        if (ev.CHAT_CHANGED) eventSource.on(ev.CHAT_CHANGED, () => renderAccentSettings());
         // Stage mode follows chats, cards and status effects.
         if (ev.CHAT_CHANGED) eventSource.on(ev.CHAT_CHANGED, () => { stage.refresh('chat'); stage.chatOpened(); });
         for (const name of ['CHARACTER_PAGE_LOADED', 'CHARACTER_EDITED', 'CHARACTER_DELETED', 'GROUP_UPDATED', 'MESSAGE_RECEIVED', 'MESSAGE_SENT', 'MESSAGE_DELETED']) {

@@ -1601,3 +1601,62 @@ body.uix #uio-snack {
 .uix-wrapbox[hidden] {
     display: none;
 }
+
+/* Accent row on profiles and the cast board */
+.uix-accent-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(100% - 12px);
+    margin: 10px 6px 0;
+    padding: 10px 12px;
+    border: 1px solid var(--uix-line);
+    border-radius: 14px;
+    background: var(--uix-card);
+    text-align: left;
+}
+
+.uix-accent-row > i:first-child {
+    color: var(--uix-accent);
+}
+
+.uix-accent-row span {
+    color: var(--uix-dim);
+    font-size: 0.85em;
+}
+
+.uix-accent-row b {
+    margin-left: auto;
+    font-size: 0.9em;
+}
+
+.uix-accent-row > i:last-child {
+    font-size: 0.75em;
+    opacity: 0.5;
+}
+
+.uix-accent-small {
+    width: 100%;
+    margin: 6px 0 0;
+    padding: 7px 10px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.uix-acc-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.uix-acc-head .uix-menu-title {
+    padding-bottom: 0;
+}
+
+#uix-menu .uio-acc {
+    padding: 8px 6px 4px;
+}
+
+#uix-menu .uio-acc .text_pole {
+    width: 100%;
+    box-sizing: border-box;
+}
