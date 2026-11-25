@@ -545,6 +545,7 @@ export function createStage(h) {
 
     function newSheet() {
         sheet('Add to the cast', [
+            row('n:ai', 'fa-wand-magic-sparkles', 'Generate with AI', 'Describe an idea; the AI writes the card'),
             row('n:create', 'fa-user-plus', 'New character', 'Write a card from scratch'),
             row('n:import', 'fa-file-import', 'Import a card', 'PNG, JSON, CHARX or YAML file'),
             row('n:url', 'fa-cloud-arrow-down', 'Import from a link', 'Chub, JanitorAI and other sites'),
@@ -881,6 +882,10 @@ export function createStage(h) {
                     </div>
                 </div>
             </div>
+            ${h.creator ? `<div class="uix-pic-row">
+                <button type="button" class="uix-accent-row" data-act="findpic"><i class="fa-solid fa-image"></i><span>Picture</span><b>Find one</b><i class="fa-solid fa-chevron-right"></i></button>
+                <button type="button" class="uix-icon" data-act="setpic" title="Set picture from phone"><i class="fa-solid fa-upload"></i></button>
+            </div>` : ''}
             ${h.accents ? `<button type="button" class="uix-accent-row" data-accentfor="card:${esc(ch.avatar)}" data-accentname="${esc(ch.name)}" data-accentindex="${index}">
                 <i class="fa-solid fa-language"></i><span>Accent</span><b>${esc(h.accents.describe(h.accents.get(h.accents.keyForCard(ch.avatar))))}</b><i class="fa-solid fa-chevron-right"></i>
             </button>` : ''}
@@ -1288,6 +1293,7 @@ export function createStage(h) {
         if (act.startsWith('n:')) {
             closeMenu();
             const which = act.slice(2);
+            if (which === 'ai') return h.creator?.open();
             if (which === 'import') return clickId('character_import_button');
             if (which === 'url') return clickId('external_import_button');
             if (which === 'create') return openFromCharacterPanel('rm_button_create');
@@ -1319,6 +1325,13 @@ export function createStage(h) {
                 return closeMenu();
             }
             case 'wrapped': return h.wrapped?.make();
+            case 'findpic':
+            case 'setpic': {
+                const ch = h.ctx().characters?.[profileFor];
+                if (!ch) return;
+                closeMenu();
+                return act === 'findpic' ? h.creator.picture(ch.avatar) : h.creator.upload(ch.avatar);
+            }
             case 'who': {
                 const who = current();
                 if (who?.type === 'char') return profileSheet(Number(who.id));

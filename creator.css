@@ -1,0 +1,339 @@
+/* Character generator and picture tools: a full-screen sheet, sized from the
+   measured screen height and placed from the top. */
+
+#uic-root {
+    --c-bg: #0e0d12;
+    --c-card: #1c1a23;
+    --c-line: rgba(255, 255, 255, 0.09);
+    --c-dim: rgba(236, 232, 243, 0.6);
+    --c-accent: var(--uio-accent, #b56cff);
+    --c-soft: var(--uio-accent-soft, rgba(181, 108, 255, 0.16));
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: var(--uio-vh, 100dvh);
+    z-index: 8600;
+    display: none;
+    flex-direction: column;
+    background: var(--c-bg);
+    color: #ece8f3;
+}
+
+#uic-root.uic-open {
+    display: flex;
+    animation: uic-in 0.25s ease-out;
+}
+
+@keyframes uic-in {
+    from { opacity: 0; transform: translateY(16px); }
+}
+
+#uic-root * {
+    box-sizing: border-box;
+}
+
+.uic-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 0 0 56px;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--c-line);
+}
+
+.uic-top > span {
+    width: 40px;
+}
+
+.uic-icon {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: none;
+    color: inherit;
+    font-size: 1.15em;
+    cursor: pointer;
+}
+
+.uic-body {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 18px 16px 40px;
+}
+
+.uic-body h1 {
+    margin: 4px 0 6px;
+    font-size: 1.6em;
+    font-weight: 800;
+}
+
+.uic-body h2 {
+    margin: 0 0 4px;
+    font-size: 1.2em;
+}
+
+.uic-body h3 {
+    margin: 18px 0 8px;
+    font-size: 0.78em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-dim);
+}
+
+.uic-dim {
+    margin: 0 0 12px;
+    color: var(--c-dim);
+    font-size: 0.9em;
+    line-height: 1.45;
+}
+
+.uic-idea,
+.uic-in {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--c-line);
+    border-radius: 14px;
+    background: var(--c-card);
+    color: inherit;
+    font: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+}
+
+.uic-idea:focus,
+.uic-in:focus {
+    border-color: var(--uio-accent-line, rgba(181, 108, 255, 0.45));
+    box-shadow: 0 0 0 3px var(--c-soft);
+}
+
+.uic-idea {
+    font-size: 1.05em;
+}
+
+.uic-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.uic-chip {
+    padding: 7px 13px;
+    border: 1px solid var(--c-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--c-dim);
+    font: inherit;
+    font-size: 0.86em;
+    cursor: pointer;
+}
+
+.uic-chip.uic-on {
+    border-color: var(--uio-accent-line, rgba(181, 108, 255, 0.45));
+    background: var(--c-soft);
+    color: var(--c-accent);
+    font-weight: 700;
+}
+
+.uic-primary,
+.uic-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 50px;
+    margin-top: 18px;
+    border-radius: 16px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.uic-primary {
+    border: none;
+    background: var(--c-accent);
+    color: #fff;
+}
+
+.uic-primary:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.uic-ghost {
+    border: 1px solid var(--c-line);
+    background: transparent;
+    color: inherit;
+    margin-top: 10px;
+}
+
+.uic-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.uic-actions > * {
+    flex: 1;
+}
+
+.uic-err {
+    margin: 12px 0 0;
+    color: #ff9d97;
+    font-size: 0.88em;
+}
+
+.uic-busy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 60px 0 30px;
+    text-align: center;
+}
+
+.uic-busy > i {
+    font-size: 2.4em;
+    color: var(--c-accent);
+    animation: uic-write 1.2s ease-in-out infinite;
+}
+
+.uic-writing {
+    animation: uic-write 1.2s ease-in-out infinite;
+}
+
+@keyframes uic-write {
+    50% { opacity: 0.35; transform: translateX(4px) rotate(-8deg); }
+}
+
+/* Preview */
+.uic-field {
+    margin-top: 14px;
+}
+
+.uic-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 0.78em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-dim);
+}
+
+.uic-reroll {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--c-line);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--c-accent);
+    cursor: pointer;
+}
+
+.uic-reroll:disabled {
+    opacity: 0.4;
+}
+
+.uic-row {
+    display: flex;
+    gap: 8px;
+}
+
+.uic-row select:first-child {
+    flex: 2;
+}
+
+.uic-row select:last-child {
+    flex: 1;
+}
+
+/* Done and picture */
+.uic-done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: 10px;
+}
+
+.uic-portrait {
+    display: grid;
+    place-items: center;
+    width: 160px;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: 22px;
+    border: 1px solid var(--c-line);
+    background: var(--c-card);
+    font-size: 2.4em;
+    color: var(--c-dim);
+}
+
+.uic-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.uic-portrait.uic-small {
+    flex: 0 0 84px;
+    width: 84px;
+    border-radius: 16px;
+    font-size: 1.4em;
+}
+
+.uic-pic-head {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.uic-query {
+    margin-bottom: 10px;
+    padding: 12px;
+    border: 1px solid var(--c-line);
+    border-radius: 16px;
+    background: var(--c-card);
+}
+
+.uic-query b {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.uic-engines {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.uic-engines button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--c-line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: inherit;
+    font: inherit;
+    font-size: 0.82em;
+    cursor: pointer;
+}
+
+.uic-engines button i {
+    color: var(--c-accent);
+}

@@ -1660,3 +1660,24 @@ body.uix #uio-snack {
     width: 100%;
     box-sizing: border-box;
 }
+
+.uix-pic-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 6px 0;
+}
+
+.uix-pic-row .uix-accent-row {
+    flex: 1;
+    width: auto;
+    margin: 0;
+}
+
+.uix-pic-row .uix-icon {
+    flex: 0 0 46px;
+    height: 46px;
+    border: 1px solid var(--uix-line);
+    border-radius: 14px;
+    background: var(--uix-card);
+}

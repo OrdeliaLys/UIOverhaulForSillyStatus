@@ -4,13 +4,14 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.6.0';
+const VERSION = '2.7.0';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
 import { ask, cut, personaInfo, BLUNT, PRONOUNS } from './ai.js';
 import { createWrapped, wrappedTheme } from './wrapped.js';
 import { createAccents } from './accents.js';
+import { createCreator } from './creator.js';
 
 // Stage mode's stylesheet loads only with the module, next to this file.
 (() => {
@@ -18,6 +19,10 @@ import { createAccents } from './accents.js';
     link.rel = 'stylesheet';
     link.href = new URL('./stage.css', import.meta.url).href;
     document.head.appendChild(link);
+    const creatorCss = document.createElement('link');
+    creatorCss.rel = 'stylesheet';
+    creatorCss.href = new URL('./creator.css', import.meta.url).href;
+    document.head.appendChild(creatorCss);
     const wrapCss = document.createElement('link');
     wrapCss.rel = 'stylesheet';
     wrapCss.href = new URL('./wrapped.css', import.meta.url).href;
@@ -347,6 +352,23 @@ const wrapped = createWrapped({
 const accents = createAccents({ ctx, settings, save, escapeHtml });
 const accentState = {};
 
+const creator = createCreator({
+    ctx,
+    settings,
+    save,
+    escapeHtml,
+    accents,
+    // In Stage mode a finished card opens its profile; otherwise its chat.
+    openProfile: (index) => {
+        if (!settings().complete) return ctx().selectCharacterById?.(index, { switchMenu: false });
+        stage.profile(index);
+    },
+    refresh: () => {
+        decorateAll();
+        stage.refresh('cards');
+    },
+});
+
 // Settings: accents for whoever is in the current chat, plus side characters.
 function renderAccentSettings() {
     const box = document.getElementById('uio-accents');
@@ -415,6 +437,7 @@ const stage = createStage({
     wrapped,
     paintTheme,
     accents,
+    creator,
     like: (avatar) => setLikes(avatar, likeCount(avatar) + 1, characterByAvatar(avatar)?.name, 'tap'),
     fullImageUrl: (src) => fullImageUrl(src),
     reapply: () => {
@@ -770,6 +793,11 @@ function buildSettings() {
                     <button type="button" class="menu_button" id="uio-undo" title="Undo the last change"><i class="fa-solid fa-rotate-left"></i> Undo</button>
                     <button type="button" class="menu_button" id="uio-reset-all" title="Set every count to zero"><i class="fa-solid fa-trash-can"></i> Reset all</button>
                 </div>
+                <b>Characters</b>
+                <div class="uio-presets">
+                    <button type="button" class="menu_button" id="uio-generate"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate a character</button>
+                    <button type="button" class="menu_button" id="uio-findpic"><i class="fa-solid fa-image"></i> Picture for this character</button>
+                </div>
                 <b>Accents</b>
                 <small class="uio-muted">Give characters an accent you can hear: their first language's grammar, rhythm and sounds in every line they speak.</small>
                 <div id="uio-accents"></div>
@@ -814,6 +842,13 @@ function buildSettings() {
         else setLikes(avatar, likeCount(avatar) + Number(btn.dataset.t), characterByAvatar(avatar)?.name);
     });
     wrap.querySelector('#uio-wrap').addEventListener('click', () => wrapped.make());
+    wrap.querySelector('#uio-generate').addEventListener('click', () => creator.open());
+    wrap.querySelector('#uio-findpic').addEventListener('click', () => {
+        const c = ctx();
+        const ch = c.characters?.[c.characterId];
+        if (ch && !c.groupId) creator.picture(ch.avatar);
+        else globalThis.toastr?.info?.('Open a chat with one character first.');
+    });
     accents.bind(wrap.querySelector('#uio-accents'), renderAccentSettings, (key) => (accentState[key] ??= {}));
     wrap.querySelector('#uio-recaps').addEventListener('click', (event) => {
         const row = event.target.closest('[data-recap]');
