@@ -4,7 +4,7 @@
 // a per-card Like Tracker. It only adds styles and small buttons: it never
 // moves SillyTavern's own elements, so other extensions keep working.
 
-const VERSION = '2.7.0';
+const VERSION = '2.8.0';
 const MODULE = 'ui_overhaul';
 
 import { createStage } from './stage.js';
@@ -51,6 +51,7 @@ const DEFAULTS = {
     likesInList: true,
     likesInChat: true,
     complete: false,    // Stage mode: the complete overhaul
+    accentWords: true,  // note English words characters show they don't know
     stageSort: 'recent',
     chrome: true,       // restyle the top bar, panel headers and other extensions' buttons
     sharp: true,        // load full-size portraits instead of SillyTavern's small thumbnails
@@ -800,6 +801,7 @@ function buildSettings() {
                 </div>
                 <b>Accents</b>
                 <small class="uio-muted">Give characters an accent you can hear: their first language's grammar, rhythm and sounds in every line they speak.</small>
+                <label class="checkbox_label"><input type="checkbox" data-k="accentWords"> Note words characters show they don't know</label>
                 <div id="uio-accents"></div>
                 <button type="button" class="menu_button uio-wrap-btn" id="uio-wrap"></button>
                 <div id="uio-recaps" class="uio-recaps"></div>
@@ -899,6 +901,20 @@ jQuery(() => {
             if (ev[name]) eventSource.on(ev[name], () => accents.update());
         }
         if (ev.CHAT_CHANGED) eventSource.on(ev.CHAT_CHANGED, () => renderAccentSettings());
+        // Words a character asks about ("What is a 'mortgage'?") are noted as
+        // words they don't know, so they stay consistent about it later.
+        if (ev.CHARACTER_MESSAGE_RENDERED) eventSource.on(ev.CHARACTER_MESSAGE_RENDERED, (mesId) => {
+            if (!settings().enabled || !settings().accentWords) return;
+            const msg = ctx().chat?.[Number(mesId)];
+            const found = accents.scanMessage(msg);
+            for (const f of found) {
+                globalThis.toastr?.info?.(`${f.name} doesn't know “${f.word}”. Noted under Accents; remove it there once they've learned it.`, 'New word', { timeOut: 5000 });
+            }
+            if (found.length) {
+                renderAccentSettings();
+                accents.update();
+            }
+        });
         // Stage mode follows chats, cards and status effects.
         if (ev.CHAT_CHANGED) eventSource.on(ev.CHAT_CHANGED, () => { stage.refresh('chat'); stage.chatOpened(); });
         for (const name of ['CHARACTER_PAGE_LOADED', 'CHARACTER_EDITED', 'CHARACTER_DELETED', 'GROUP_UPDATED', 'MESSAGE_RECEIVED', 'MESSAGE_SENT', 'MESSAGE_DELETED']) {

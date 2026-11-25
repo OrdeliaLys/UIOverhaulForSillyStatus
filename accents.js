@@ -14,6 +14,7 @@ export const ACCENTS = {
         words: 'eh bien, voilà, bof, alors, mon Dieu, chéri(e), n\'est-ce pas, comment dire…, putain when cursing',
         rhythm: 'searches for words ("how you say…"), shrugging understatement, a little theatrical',
         sample: '"Ah, non, non. You cannot just come \'ere like zis, without to call first. Comment dire… it is very rude, no?"',
+        hard: '"th" words (the, think, three, with), words starting with h (hungry, house, happy), "world", "squirrel", "rural", stress in long words (comfortable, vegetable, development); may say a French word when the English one won\'t come',
     },
     japanese: {
         name: 'Japanese', flag: '🇯🇵',
@@ -22,6 +23,7 @@ export const ACCENTS = {
         words: 'ano…, eto…, hai, sou desu ne, sugoi, maa, -san / -chan / -kun / -sama, kawaii, baka when annoyed',
         rhythm: 'hesitant fillers, indirect and polite, sentences trail off instead of finishing a refusal',
         sample: '"Ano… sorry, sorry. I did not know this is your seat. Maa, if is okay… I sit here only a little, ne?"',
+        hard: 'consonant clusters and word endings (strengths, months, asked, world), "th" words, long Latin words (particularly, unfortunately), choosing between a/the; may fall back on a Japanese word or katakana-English ("konbini", "pasokon")',
     },
     mandarin: {
         name: 'Mandarin Chinese', flag: '🇨🇳',
@@ -30,6 +32,7 @@ export const ACCENTS = {
         words: 'aiya, wah, hao, ah or la at the end of sentences, dui dui, mei you, ni hao, laoban',
         rhythm: 'direct, blunt, practical; short sentences; haggling energy',
         sample: '"Aiya, why you so late? Food already cold! Sit, sit. You eat or not?"',
+        hard: 'final consonant clusters (asked, months, sixth, texts), "th" words, plurals and past tense endings, "v" vs "w", long multi-syllable words; may swap in a Chinese word',
     },
     singlish: {
         name: 'Singlish / Malaysian', flag: '🇸🇬',
@@ -38,6 +41,7 @@ export const ACCENTS = {
         words: 'lah, leh, lor, meh, sia, alamak, walao eh, shiok, paiseh, kiasu, abuden',
         rhythm: 'rapid, cheeky, particles at the end of almost every line',
         sample: '"Walao eh, you serious or not? Cannot lah, the boss sure scold one. Later then go, can?"',
+        hard: 'few; formal or posh British words feel stiff and get swapped for local ones',
     },
     korean: {
         name: 'Korean', flag: '🇰🇷',
@@ -46,6 +50,7 @@ export const ACCENTS = {
         words: 'aigoo, omo, daebak, jinjja?, ani, ne, hwaiting!, oppa / unnie / hyung / noona, ya!',
         rhythm: 'swings from polite to dramatic, lots of exclamations',
         sample: '"Omo, jinjja? You make this for me? Aigoo… is so pretty. Thank you, really, really thank you."',
+        hard: '"f" words (coffee, fine, phone), "z" words (zero, zoo, pizza), "th" words, word-final clusters, a/the; may slip in a Korean word or Konglish ("hand phone", "fighting")',
     },
     russian: {
         name: 'Russian', flag: '🇷🇺',
@@ -54,6 +59,7 @@ export const ACCENTS = {
         words: 'da, nyet, nu, davai, blyat (cursing), ladno, bozhe moi, moy dorogoy / moya dorogaya',
         rhythm: 'flat, matter-of-fact, deadpan fatalistic humor',
         sample: '"Nyet. You do not go out in this. Is minus thirty, you die, then who I argue with? Davai, sit."',
+        hard: 'a/the (dropped or misplaced), "th" words, "w" words (water, world, wow), short vowels (ship/sheep, full/fool), phrasal verbs (put up with, get over)',
     },
     german: {
         name: 'German', flag: '🇩🇪',
@@ -62,6 +68,7 @@ export const ACCENTS = {
         words: 'ja, genau, ach, doch, na ja, mein Gott, Scheiße, Schatz, also',
         rhythm: 'precise, direct, slightly formal, dry humor',
         sample: '"Ja, but this is not how it works, or? First you ask, then you take. Ach, never mind. Come already."',
+        hard: '"th" words, "w" vs "v" (very, wine, vacation), soft "j" (jump, just), phrasal verbs and idioms; false friends ("become" meaning get, "actual" meaning current)',
     },
     spanish: {
         name: 'Spanish', flag: '🇪🇸',
@@ -70,6 +77,7 @@ export const ACCENTS = {
         words: 'mira, oye, ay, Dios mío, cariño, pues, vale, joder (Spain) or órale (Mexico), mi amor',
         rhythm: 'fast, warm, expressive, rising and falling',
         sample: '"Ay, mira, cariño, is not my fault! I tell you before, no? Is a leetle bit dangerous, pero you don\'t listen."',
+        hard: 'words starting with s + consonant (school, speak, stop), "sh" vs "ch" (sheep, chair), "j" and "y" (yes, jelly), short i vs ee (ship/sheep, live/leave), "th" words; false friends ("embarrassed" ≠ pregnant, "actually")',
     },
     italian: {
         name: 'Italian', flag: '🇮🇹',
@@ -78,6 +86,7 @@ export const ACCENTS = {
         words: 'allora, dai, mamma mia, madonna, ecco, basta, cara / caro, tesoro, figurati',
         rhythm: 'musical and animated, talks with the hands, quick mood swings',
         sample: '"Allora, listen to me, tesoro. You go, you come back, is-a fine. But you don\'t lie to me, capito? Basta."',
+        hard: 'words starting with h, "th" words, word-final consonants (a soft vowel creeps in), short i vs ee, silent letters (knife, Wednesday, island)',
     },
     irish: {
         name: 'Irish', flag: '🇮🇪',
@@ -86,6 +95,7 @@ export const ACCENTS = {
         words: 'grand, sure, eejit, feck, craic, wee, yer man / yer one, go way outta that',
         rhythm: 'lilting, storytelling, teasing',
         sample: '"Ah, go way outta that. Sure I\'m only after getting here meself. Yer man\'s an eejit, so he is."',
+        hard: 'none really; they just use their own words for things',
     },
     scottish: {
         name: 'Scottish', flag: '🏴',
@@ -94,6 +104,7 @@ export const ACCENTS = {
         words: 'aye, wee, ken, lass / lad, bonnie, och, numpty, braw, greetin\' (crying)',
         rhythm: 'warm but blunt, dry sarcasm',
         sample: '"Och, ye cannae be serious, lass. Wee bit o\' rain never killed naebody. Get yer boots on."',
+        hard: 'none really; they just use their own words for things',
     },
     southern: {
         name: 'Southern US', flag: '🇺🇸',
@@ -102,6 +113,7 @@ export const ACCENTS = {
         words: 'sugar, darlin\', bless your heart, howdy, reckon, yonder, holler',
         rhythm: 'slow, warm, sweet-talking even when insulting',
         sample: '"Well bless your heart, sugar. Y\'all were fixin\' to leave without sayin\' goodbye? I reckon not."',
+        hard: 'none; posh or technical words come out sounding put-on',
     },
     cockney: {
         name: 'Cockney / London', flag: '🇬🇧',
@@ -110,6 +122,7 @@ export const ACCENTS = {
         words: 'mate, love, guv, bloody, bruv, proper, blimey, innit, sod off',
         rhythm: 'quick, cheeky, street-smart',
         sample: '"Oi, \'ow\'d you get in \'ere, love? Ain\'t nobody s\'posed to know abaht this place, innit."',
+        hard: 'none; posh or formal words come out sounding put-on',
     },
     indian: {
         name: 'Indian English', flag: '🇮🇳',
@@ -118,6 +131,7 @@ export const ACCENTS = {
         words: 'yaar, arre, achha, ji, bas, haan, na, beta, chalo',
         rhythm: 'warm, fast, expressive, polite teasing',
         sample: '"Arre yaar, why you are worrying so much? Do one thing, sit, have chai. We will fix it today itself, achha?"',
+        hard: '"v" vs "w" (very, wet), "th" words, some idioms and slang (they use their own instead), British vs American usage mixing',
     },
     arabic: {
         name: 'Arabic', flag: '🌙',
@@ -126,6 +140,7 @@ export const ACCENTS = {
         words: 'yalla, habibi / habibti, wallah, inshallah, khalas, ya (before names), mashallah',
         rhythm: 'warm, emphatic, hospitable, dramatic',
         sample: '"Wallah, habibti, I tell you the truth! Yalla, come, come, sit. Khalas, no more fighting tonight."',
+        hard: '"p" words (people, please, pepper), "v" words (very, voice), vowel-heavy words, consonant clusters (strengths, splendid), a/the and is/are',
     },
     custom: { name: 'Custom', flag: '✏️' },
 };
@@ -157,34 +172,37 @@ export function createAccents(h) {
     }
 
     function set(key, value) {
-        if (!value || !value.id) delete store()[key];
+        if (!value || (!value.id && !value.unknown?.length)) delete store()[key];
         else store()[key] = value;
         h.save();
         update();
     }
 
     function describe(a) {
-        if (!a?.id) return 'None';
+        const n = a?.unknown?.length ?? 0;
+        if (!a?.id) return n ? `No accent · ${n} unknown word${n === 1 ? '' : 's'}` : 'None';
         const p = ACCENTS[a.id];
         const nm = a.id === 'custom' ? (a.custom?.name || 'Custom') : p?.name;
-        return `${nm} · ${STRENGTH_NAMES[a.strength ?? 2]}`;
+        return `${nm} · ${STRENGTH_NAMES[a.strength ?? 2]}${n ? ` · ${n} unknown` : ''}`;
     }
 
     function profileText(a) {
-        const p = a.id === 'custom' ? (a.custom ?? {}) : ACCENTS[a.id];
-        if (!p) return '';
+        const p = a.id === 'custom' ? (a.custom ?? {}) : (ACCENTS[a.id] ?? {});
         const parts = [
             p.grammar && `Grammar: ${p.grammar}`,
             p.sound && `Sounds: ${p.sound}`,
             p.words && `Words and fillers: ${p.words}`,
             p.rhythm && `Rhythm: ${p.rhythm}`,
+            p.hard && !/^none/i.test(p.hard) && `Hard for them: ${p.hard}. Now and then (not every line) they stumble on these: a slightly off pronunciation, a pause to find the word, a simpler word instead, or asking how to say it`,
             p.sample && `Example: ${p.sample}`,
             a.notes && `Notes: ${a.notes}`,
+            a.unknown?.length && `English words they have shown they don't know: ${a.unknown.join(', ')}. They never use these words themselves. When someone else uses one, they react like someone who doesn't know it (ask what it means, guess wrong, or talk around it), until it's been explained to them in the story`,
         ].filter(Boolean);
         return parts.join('. ');
     }
 
     function line(name, a) {
+        if (!a.id) return `- ${name}: ${profileText(a)}`;
         const p = a.id === 'custom' ? (a.custom ?? {}) : ACCENTS[a.id];
         const label = a.id === 'custom' ? (p.name || 'their own') : p.name;
         return `- ${name}: ${label} accent, ${STRENGTH[a.strength ?? 2]}. ${profileText(a)}`;
@@ -196,7 +214,7 @@ export function createAccents(h) {
         const out = [];
         const seen = new Set();
         const add = (name, a) => {
-            if (!a?.id || !name || seen.has(name.toLowerCase())) return;
+            if (!(a?.id || a?.unknown?.length) || !name || seen.has(name.toLowerCase())) return;
             seen.add(name.toLowerCase());
             out.push({ name, a });
         };
@@ -225,7 +243,7 @@ export function createAccents(h) {
         if (!c.setExtensionPrompt) return;
         const entries = h.settings().enabled ? activeEntries() : [];
         const text = entries.length
-            ? `[Accents. Write these characters' spoken dialogue with their accent, every time they speak, and keep it up for the whole chat. Narration stays in normal English, and nobody else picks it up. Carry it mostly through grammar, rhythm and word choice; respell sounds only as much as the strength says, keeping every line readable. Base it on how real speakers talk, not cartoon stereotypes.\n${entries.map(e => line(e.name, e.a)).join('\n')}]`
+            ? `[Accents and vocabulary. Write these characters' spoken dialogue with their accent, every time they speak, and keep it up for the whole chat. Narration stays in normal English, and nobody else picks it up. Carry it mostly through grammar, rhythm and word choice; respell sounds only as much as the strength says, keeping every line readable. Base it on how real speakers talk, not cartoon stereotypes.\n${entries.map(e => line(e.name, e.a)).join('\n')}]`
             : '';
         // In the chat, one message from the end: close to where the reply is written.
         c.setExtensionPrompt(KEY, text, 1, 1, false, 0);
@@ -251,12 +269,12 @@ export function createAccents(h) {
             `Known accents: ${Object.entries(ACCENTS).filter(([k]) => k !== 'custom').map(([k, v]) => `${k} (${v.name})`).join(', ')}.\n\n` +
             'Which accent fits this character, if any? Reply in exactly this format:\n' +
             'ACCENT: <one key from the list, or "custom", or "none">\nSTRENGTH: <1, 2 or 3>\n' +
-            'NAME: <if custom: the accent\'s name>\nGRAMMAR: <if custom: grammar habits>\nSOUNDS: <if custom: how sounds come through>\nWORDS: <if custom: native words and fillers>\nRHYTHM: <if custom: how they talk>\n' +
+            'NAME: <if custom: the accent\'s name>\nGRAMMAR: <if custom: grammar habits>\nSOUNDS: <if custom: how sounds come through>\nWORDS: <if custom: native words and fillers>\nRHYTHM: <if custom: how they talk>\nHARD: <if custom: English words and sounds that are hard for them>\n' +
             `NOTES: <anything specific to this character, one line>\n${BLUNT}`;
         const raw = await ask(c, system, user, 1500);
         const f = {};
         for (const l of raw.split(/\r?\n/)) {
-            const m = /^[\s*#\-]*\**(ACCENT|STRENGTH|NAME|GRAMMAR|SOUNDS|WORDS|RHYTHM|NOTES)\**\s*[:：]\s*(.*)$/i.exec(l);
+            const m = /^[\s*#\-]*\**(ACCENT|STRENGTH|NAME|GRAMMAR|SOUNDS|WORDS|RHYTHM|HARD|NOTES)\**\s*[:：]\s*(.*)$/i.exec(l);
             if (m) f[m[1].toUpperCase()] = m[2].replace(/\*\*/g, '').trim();
         }
         const id = String(f.ACCENT ?? '').toLowerCase().replace(/[^a-z]/g, '');
@@ -265,9 +283,103 @@ export function createAccents(h) {
         if (ACCENTS[id] && id !== 'custom') return { id, strength, notes: f.NOTES && !/^none|^-$/i.test(f.NOTES) ? cut(f.NOTES, 200) : '' };
         return {
             id: 'custom', strength,
-            custom: { name: cut(f.NAME || 'Custom', 40), grammar: cut(f.GRAMMAR, 300), sound: cut(f.SOUNDS, 300), words: cut(f.WORDS, 300), rhythm: cut(f.RHYTHM, 200) },
+            custom: { name: cut(f.NAME || 'Custom', 40), grammar: cut(f.GRAMMAR, 300), sound: cut(f.SOUNDS, 300), words: cut(f.WORDS, 300), rhythm: cut(f.RHYTHM, 200), hard: cut(f.HARD, 300) },
             notes: f.NOTES && !/^none|^-$/i.test(f.NOTES) ? cut(f.NOTES, 200) : '',
         };
+    }
+
+    // ---------- words they don't know ----------
+
+    const COMMON = new Set(('the a an some any this that these those it what which who whom whose where when why how here there ' +
+        'you your yours me my mine him her his hers them they their we us our ours one ones thing things something ' +
+        'anything nothing everything that\'s happening wrong going on up so then now true real really yes no okay ok ' +
+        'sorry love life time name place way problem matter difference point idea plan meaning deal story it\'s ' +
+        'do does did have has had be is are was were am will would can could should mean means meant say said').split(/\s+/));
+
+    function cleanWord(w) {
+        return String(w ?? '').toLowerCase().replace(/[^a-z' -]/g, '').replace(/^['\s-]+|['\s-]+$/g, '').trim();
+    }
+
+    // strict: from automatic detection, so common words, phrases built on
+    // them, and names are skipped. Words you add by hand always go in.
+    function learnUnknown(key, word, displayName, strict = false) {
+        const raw = String(word ?? '').trim();
+        const w = cleanWord(raw);
+        if (!w) return false;
+        if (strict) {
+            const parts = w.split(/\s+/);
+            if (w.length < 3 || w.length > 30 || parts.length > 3) return false;
+            if (COMMON.has(parts[0]) || parts.every(x => COMMON.has(x))) return false;
+            if (/^[A-Z]/.test(raw.replace(/^['‘’*_]+/, ''))) return false; // a name, not a word
+        }
+        const cur = get(key) ?? { id: '', strength: 2 };
+        const list = cur.unknown ?? [];
+        if (list.includes(w)) return false;
+        set(key, { ...cur, unknown: [...list, w].slice(-40), displayName: key.startsWith('name:') ? (cur.displayName ?? displayName) : cur.displayName });
+        return true;
+    }
+
+    function forget(key, word) {
+        const cur = get(key);
+        if (!cur) return;
+        set(key, { ...cur, unknown: (cur.unknown ?? []).filter(w => w !== word) });
+    }
+
+    // Spoken lines only (text in quotes), with who said them: the message's
+    // speaker, or the bold **Name:** that opens the paragraph.
+    function spoken(msg) {
+        const out = [];
+        for (const para of String(msg.mes ?? '').replace(/<[^>]+>/g, ' ').split(/\n+/)) {
+            const tag = /^\s*\*\*([^*:]{2,30}):?\*\*\s*:?/.exec(para);
+            const who = tag ? tag[1].trim() : null;
+            for (const m of para.matchAll(/["“]([^"”]{2,400})["”]/g)) out.push({ who, text: m[1] });
+        }
+        return out;
+    }
+
+    const Q = "['‘’*_]";
+    const W = "([A-Za-z][A-Za-z' -]{2,29}?)";
+    const ASKS = [
+        // "What is a smartphone?" / "What is mortgage?" (asking for a meaning, not "the X")
+        { re: new RegExp(`\\bwhat (?:is|are) (?:an? )?${W}\\s*\\?`, 'gi'), caps: false },
+        // "What is 'ghosting'?" / "What is the *afterparty*"
+        { re: new RegExp(`\\bwhat (?:is|are|does) (?:an? |the |this |that )?${Q}+${W}${Q}+`, 'gi'), caps: false },
+        // "What does 'yeet' mean?"
+        { re: new RegExp(`\\bwhat does ${Q}*${W}${Q}* mean\\b`, 'gi'), caps: false },
+        // "Mortgage? What is this?"
+        { re: new RegExp(`(?:^|[.!?…]\\s+)${Q}*${W}${Q}*\\?\\s*what (?:is|does) (?:this|that|it)\\b`, 'gi'), caps: true },
+        // "I do not know this word, mortgage." / "I don't know the word 'brunch'"
+        { re: new RegExp(`\\bI (?:do not|don't|did not|didn't) (?:know|understand) (?:this|the|that) word\\s*,?\\s*${Q}*${W}${Q}*(?=[\\s,.!?…]|$)`, 'gi'), caps: false },
+    ];
+
+    // After a reply: words the speaker asked about or said they don't know.
+    function scanMessage(msg) {
+        if (!msg || msg.is_user || msg.is_system) return [];
+        const c = h.ctx();
+        const found = [];
+        for (const { who, text } of spoken(msg)) {
+            let key;
+            let name;
+            if (who) {
+                const ch = c.characters?.find(x => x?.name?.toLowerCase() === who.toLowerCase());
+                key = ch ? keyForCard(ch.avatar) : keyForName(who);
+                name = who;
+            } else {
+                const ch = c.characters?.find(x => x?.name === msg.name) ?? c.characters?.[c.characterId];
+                if (!ch) continue;
+                key = keyForCard(ch.avatar);
+                name = ch.name;
+            }
+            for (const { re, caps } of ASKS) {
+                re.lastIndex = 0;
+                for (const m of text.matchAll(re)) {
+                    // At the start of a sentence a capital letter is normal.
+                    const word = caps ? m[1].charAt(0).toLowerCase() + m[1].slice(1) : m[1];
+                    if (learnUnknown(key, word, name, true)) found.push({ name, word: cleanWord(word) });
+                }
+            }
+        }
+        return found;
     }
 
     // The editor: shared by Stage's sheet and the settings panel.
@@ -286,9 +398,16 @@ export function createAccents(h) {
                     <input class="text_pole" data-accf="name" placeholder="Accent name (e.g. Quebec French, Thai)" value="${esc(c.name ?? '')}">
                     <textarea class="text_pole" rows="2" data-accf="grammar" placeholder="Grammar habits">${esc(c.grammar ?? '')}</textarea>
                     <textarea class="text_pole" rows="2" data-accf="sound" placeholder="How sounds come through">${esc(c.sound ?? '')}</textarea>
-                    <textarea class="text_pole" rows="2" data-accf="words" placeholder="Native words and fillers">${esc(c.words ?? '')}</textarea>` : `
-                    <p class="uio-acc-about">${esc(ACCENTS[a.id]?.sample ?? '')}</p>`}
+                    <textarea class="text_pole" rows="2" data-accf="words" placeholder="Native words and fillers">${esc(c.words ?? '')}</textarea>
+                    <textarea class="text_pole" rows="2" data-accf="hard" placeholder="English words and sounds that are hard for them">${esc(c.hard ?? '')}</textarea>` : `
+                    <p class="uio-acc-about">${esc(ACCENTS[a.id]?.sample ?? '')}</p>
+                    ${ACCENTS[a.id]?.hard ? `<p class="uio-acc-hard"><b>Hard for them:</b> ${esc(ACCENTS[a.id].hard)}</p>` : ''}`}
                 <input class="text_pole" data-accnotes placeholder="Notes (e.g. only when angry, Quebec not Paris)" value="${esc(a.notes ?? '')}">` : ''}
+                <div class="uio-acc-unknown">
+                    <b>Words they don't know</b>
+                    <div class="uio-acc-words">${(a.unknown ?? []).map(w => `<span>${esc(w)}<button type="button" data-accunword="${esc(w)}" title="They know it now">×</button></span>`).join('') || '<small>None yet. Words they ask about in the story are added here.</small>'}</div>
+                    <input class="text_pole" data-accaddword placeholder="Add a word they don't know, then Enter">
+                </div>
                 <div class="uio-acc-actions">
                     ${state.index !== undefined ? `<button type="button" class="menu_button" data-accsuggest="${state.index}"${state.busy === 'suggest' ? ' disabled' : ''}><i class="fa-solid fa-wand-magic-sparkles"></i> ${state.busy === 'suggest' ? 'Reading the card…' : 'Suggest from card'}</button>` : ''}
                     ${a.id ? `<button type="button" class="menu_button" data-accsample${state.busy === 'sample' ? ' disabled' : ''}><i class="fa-solid fa-comment-dots"></i> ${state.busy === 'sample' ? 'Writing…' : 'Read a sample'}</button>` : ''}
@@ -308,12 +427,16 @@ export function createAccents(h) {
             const name = box.dataset.accname;
             const cur = get(key) ?? { id: '', strength: 2 };
             const state = stateFor(key);
-            const t = e.target.closest('[data-acc], [data-accstr], [data-accsample], [data-accsuggest]');
+            const t = e.target.closest('[data-acc], [data-accstr], [data-accsample], [data-accsuggest], [data-accunword]');
             if (!t) return;
             e.stopPropagation();
+            if (t.dataset.accunword !== undefined) {
+                forget(key, t.dataset.accunword);
+                return rerender();
+            }
             if (t.dataset.acc !== undefined) {
                 const id = t.dataset.acc;
-                set(key, id ? { ...cur, id, displayName: key.startsWith('name:') ? name : undefined } : null);
+                set(key, id ? { ...cur, id, displayName: key.startsWith('name:') ? name : undefined } : (cur.unknown?.length ? { unknown: cur.unknown, displayName: cur.displayName } : null));
                 state.sample = '';
                 return rerender();
             }
@@ -339,7 +462,7 @@ export function createAccents(h) {
                 rerender();
                 try {
                     const s = await suggest(Number(t.dataset.accsuggest));
-                    if (s) set(key, s);
+                    if (s) set(key, { ...s, unknown: cur.unknown });
                     else state.error = 'No accent seems to fit this card.';
                 } catch (err) {
                     state.error = String(err?.message ?? err);
@@ -352,12 +475,23 @@ export function createAccents(h) {
             const box = e.target.closest('.uio-acc');
             if (!box) return;
             const key = box.dataset.acckey;
+            if (e.target.dataset.accaddword !== undefined) {
+                for (const w of e.target.value.split(',')) learnUnknown(key, w, box.dataset.accname);
+                e.target.value = '';
+                return rerender();
+            }
             const cur = get(key);
             if (!cur) return;
             if (e.target.dataset.accnotes !== undefined) set(key, { ...cur, notes: e.target.value.trim() });
             if (e.target.dataset.accf) set(key, { ...cur, custom: { ...(cur.custom ?? {}), [e.target.dataset.accf]: e.target.value.trim() } });
         });
+        root.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.dataset?.accaddword !== undefined) {
+                e.preventDefault();
+                e.target.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
     }
 
-    return { get, set, describe, update, editorHtml, bind, keyForCard, keyForName, activeEntries };
+    return { get, set, describe, update, editorHtml, bind, keyForCard, keyForName, activeEntries, scanMessage, learnUnknown, forget };
 }

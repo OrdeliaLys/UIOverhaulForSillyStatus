@@ -1663,3 +1663,52 @@ body.uio-chrome .list-group {
     color: #ff9d97;
     font-size: 0.85em;
 }
+
+.uio-acc-hard {
+    margin: 0;
+    font-size: 0.82em;
+    line-height: 1.4;
+    opacity: 0.75;
+}
+
+.uio-acc-unknown {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.uio-acc-unknown > b {
+    font-size: 0.85em;
+}
+
+.uio-acc-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.uio-acc-words small {
+    opacity: 0.6;
+}
+
+.uio-acc-words span {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 4px 3px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.85em;
+}
+
+.uio-acc-words button {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+}
