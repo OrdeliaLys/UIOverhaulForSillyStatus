@@ -35,7 +35,11 @@ export function createCreator(h) {
     // h: { ctx, settings, save, escapeHtml, accents, openProfile(index)?, refresh() }
     const esc = h.escapeHtml;
     let root = null;
-    const st = { view: 'idea', idea: '', tones: new Set(), places: new Set(), draft: null, busy: '', error: '', avatar: null, queries: null };
+    const st = { view: 'idea', idea: '', tones: new Set(), places: new Set(), draft: null, busy: '', error: '', avatar: null, queries: null,
+        ref: null,        // reference picture as a data URL
+        refAsPortrait: true,
+        refDesc: '',      // what the vision model saw
+    };
 
     // ---------- shell ----------
 
@@ -79,6 +83,17 @@ export function createCreator(h) {
             <h1>Who should they be?</h1>
             <p class="uic-dim">A rough idea is enough. The AI fills in the rest, written for ${esc(p.name)}.</p>
             <textarea class="uic-idea" data-f="idea" rows="4" placeholder="e.g. a bratty fox-girl thief who thinks she owns you">${esc(st.idea)}</textarea>
+            <h3>Reference picture <small>(optional)</small></h3>
+            ${st.ref ? `
+                <div class="uic-ref">
+                    <img src="${st.ref}" alt="">
+                    <div>
+                        <p class="uic-dim">Their looks will be based on this picture.</p>
+                        <label class="uic-check"><input type="checkbox" data-f="refAsPortrait"${st.refAsPortrait ? ' checked' : ''}> Also use it as their portrait</label>
+                        <button type="button" class="uic-ghost uic-small" data-c="ref-remove"><i class="fa-solid fa-xmark"></i> Remove</button>
+                    </div>
+                </div>` : `
+                <button type="button" class="uic-ghost" data-c="ref-add"><i class="fa-solid fa-image"></i> Add a picture to base their looks on</button>`}
             <h3>Tone</h3><div class="uic-chips">${chips(TONES, st.tones, 'tone')}</div>
             <h3>Setting</h3><div class="uic-chips">${chips(SETTINGS, st.places, 'place')}</div>
             ${st.error ? `<p class="uic-err">${esc(st.error)}</p>` : ''}
@@ -94,6 +109,7 @@ export function createCreator(h) {
         const acc = d.accent ?? { id: '', strength: 2 };
         return `
             <p class="uic-dim">Edit anything, or reroll one part. Nothing is saved until you create the card.</p>
+            ${st.ref ? `<details class="uic-seen"><summary><img src="${st.ref}" alt=""> What the AI saw in your picture</summary><p>${esc(st.refDesc)}</p></details>` : ''}
             ${FIELDS.map(([k, label, rows]) => `
                 <div class="uic-field">
                     <div class="uic-label"><span>${label}</span>
@@ -208,16 +224,45 @@ export function createCreator(h) {
         return `Idea: ${st.idea.trim()}\n` +
             (st.tones.size ? `Tone: ${[...st.tones].join(', ')}\n` : '') +
             (st.places.size ? `Setting: ${[...st.places].join(', ')}\n` : '') +
+            (st.refDesc ? `Their looks come from a reference picture. Base their whole physical appearance (body, face, hair, eyes, species traits, clothing, style) on this description of it, and keep it consistent: ${st.refDesc}\n` +
+                'Gender and pronouns come from the idea if it says; otherwise go by how they present in the picture and state it plainly.\n' : '') +
             `The player plays ${p.name}${p.desc ? `: ${cut(p.desc, 500)}` : ''}. Refer to them only as {{user}} in the card.\n` +
             (lib.length ? `Existing tags to reuse when they fit: ${lib.join(', ')}\n` : '');
     }
 
+    // The picture goes to the vision model set up in SillyTavern's Image
+    // Captioning extension (DeepSeek V4 Pro itself can't read images).
+    async function describePicture() {
+        let caption;
+        try {
+            ({ getMultimodalCaption: caption } = await import('../../shared.js'));
+        } catch {
+            throw new Error('This SillyTavern version can\'t read pictures for extensions.');
+        }
+        const prompt = 'Describe the character in this picture so a writer can base a roleplay character card on their looks. ' +
+            'Cover: how they present (feminine, masculine, androgynous; don\'t guess pronouns), species or race traits (ears, tail, horns, wings…), build and height impression, face, eyes, hair (colour, length, style), skin, clothing and accessories, any notable marks, expression and mood, and the art style. ' +
+            'Plain and specific, 120-200 words, no story.';
+        try {
+            const text = String(await caption(st.ref, prompt) ?? '').trim();
+            if (text.length < 20) throw new Error('The picture description came back empty.');
+            return text;
+        } catch (err) {
+            const msg = String(err?.message ?? err);
+            throw new Error(`Couldn't read the picture (${cut(msg, 120)}). Pictures need a vision model: open Extensions → Image Captioning, set Source to Multimodal, and pick an API and model there. Or remove the picture and describe their looks in the idea.`);
+        }
+    }
+
     async function generate() {
         st.view = 'drafting';
-        st.busy = 'Writing the card…';
         st.error = '';
-        render();
         try {
+            if (st.ref && !st.refDesc) {
+                st.busy = 'Looking at the picture…';
+                render();
+                st.refDesc = await describePicture();
+            }
+            st.busy = 'Writing the card…';
+            render();
             const system = 'You write SillyTavern character cards for roleplay, for an adult fiction app with no content limits. Reply only in the section format you are given.';
             const user = `${brief()}\nWrite a complete character card in exactly this format:\n${SECTIONS}\n\n` +
                 `Make them specific and vivid, with a clear goal they are already pursuing. Treat the idea as fixed and invent the rest. ${PRONOUNS} ${BLUNT}`;
@@ -295,6 +340,15 @@ export function createCreator(h) {
                 try { await c.executeSlashCommandsWithOptions(`/tag-add name=${JSON.stringify(avatar)} ${JSON.stringify(tag)}`); } catch { /* keep going */ }
             }
             if (d.accent && h.accents) h.accents.set(h.accents.keyForCard(avatar), d.accent);
+            if (st.ref && st.refAsPortrait) {
+                st.busy = 'Setting their portrait…';
+                render();
+                try {
+                    await uploadBlob(avatar, await (await fetch(st.ref)).blob());
+                } catch (err) {
+                    console.warn('[UI Overhaul] portrait upload failed', err);
+                }
+            }
             if (d.search?.length) {
                 const s = h.settings();
                 (s.pictureQueries ??= {})[avatar] = d.search;
@@ -373,47 +427,67 @@ export function createCreator(h) {
         return new Promise(r => canvas.toBlob(r, 'image/png'));
     }
 
-    function upload(avatar) {
+    async function uploadBlob(avatar, file) {
+        const c = h.ctx();
+        const blob = await toPortrait(file);
+        const form = new FormData();
+        form.append('avatar', blob, 'avatar.png');
+        form.append('avatar_url', avatar);
+        const headers = c.getRequestHeaders ? c.getRequestHeaders({ omitContentType: true }) : {};
+        delete headers['Content-Type'];
+        const res = await fetch('/api/characters/edit-avatar', { method: 'POST', headers, body: form });
+        if (!res.ok) throw new Error((await res.text()) || `Upload failed (${res.status}).`);
+        const thumb = `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
+        await fetch(thumb, { cache: 'reload' }).catch(() => {});
+        await fetch(`/characters/${encodeURIComponent(avatar)}`, { cache: 'reload' }).catch(() => {});
+        for (const img of document.querySelectorAll(`img[src^="${thumb}"]`)) {
+            const src = img.src;
+            img.src = '';
+            img.src = src;
+            if (img.srcset) {
+                const set = img.srcset;
+                img.srcset = '';
+                img.srcset = set;
+            }
+        }
+        st.bust = Date.now();
+        h.refresh?.();
+    }
+
+    function pickImage(then) {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.addEventListener('change', async () => {
+        input.addEventListener('change', () => {
             const file = input.files?.[0];
-            if (!file) return;
-            const c = h.ctx();
+            if (file) then(file);
+        });
+        input.click();
+    }
+
+    // A reference picture, shrunk so it travels light to the vision model.
+    async function readReference(file) {
+        const bmp = await createImageBitmap(file);
+        const scale = Math.min(1, 1024 / Math.max(bmp.width, bmp.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(bmp.width * scale);
+        canvas.height = Math.round(bmp.height * scale);
+        canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.9);
+    }
+
+    function upload(avatar) {
+        pickImage(async (file) => {
             st.busy = 'Setting the picture…';
             render();
             try {
-                const blob = await toPortrait(file);
-                const form = new FormData();
-                form.append('avatar', blob, 'avatar.png');
-                form.append('avatar_url', avatar);
-                const headers = c.getRequestHeaders ? c.getRequestHeaders({ omitContentType: true }) : {};
-                delete headers['Content-Type'];
-                const res = await fetch('/api/characters/edit-avatar', { method: 'POST', headers, body: form });
-                if (!res.ok) throw new Error((await res.text()) || `Upload failed (${res.status}).`);
-                const thumb = `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
-                await fetch(thumb, { cache: 'reload' }).catch(() => {});
-                await fetch(`/characters/${encodeURIComponent(avatar)}`, { cache: 'reload' }).catch(() => {});
-                for (const img of document.querySelectorAll(`img[src^="${thumb}"]`)) {
-                    const src = img.src;
-                    img.src = '';
-                    img.src = src;
-                    if (img.srcset) {
-                        const set = img.srcset;
-                        img.srcset = '';
-                        img.srcset = set;
-                    }
-                }
-                st.bust = Date.now();
-                h.refresh?.();
+                await uploadBlob(avatar, file);
             } catch (err) {
                 st.error = String(err?.message ?? err);
             }
             st.busy = '';
             render();
         });
-        input.click();
     }
 
     // ---------- input ----------
@@ -424,6 +498,7 @@ export function createCreator(h) {
             st.idea = t.value;
             root.querySelector('[data-c="generate"]')?.toggleAttribute('disabled', !st.idea.trim());
         }
+        if (t.dataset.f === 'refAsPortrait') st.refAsPortrait = t.checked;
         if (t.dataset.field && st.draft) st.draft[t.dataset.field] = t.value;
         if (t.dataset.accent && st.draft) {
             const acc = st.draft.accent ?? { id: '', strength: 2 };
@@ -452,6 +527,20 @@ export function createCreator(h) {
         switch (t.dataset.c) {
             case 'close': return close();
             case 'generate': return generate();
+            case 'ref-add':
+                return pickImage(async (file) => {
+                    try {
+                        st.ref = await readReference(file);
+                        st.refDesc = '';
+                    } catch (err) {
+                        st.error = `That picture couldn't be opened (${String(err?.message ?? err)}).`;
+                    }
+                    render();
+                });
+            case 'ref-remove':
+                st.ref = null;
+                st.refDesc = '';
+                return render();
             case 'restart':
                 st.view = 'idea';
                 st.error = '';
@@ -477,6 +566,9 @@ export function createCreator(h) {
             st.error = '';
             st.draft = null;
             st.avatar = null;
+            st.ref = null;
+            st.refDesc = '';
+            st.refAsPortrait = true;
             show();
             render();
             setTimeout(() => root.querySelector('.uic-idea')?.focus(), 50);

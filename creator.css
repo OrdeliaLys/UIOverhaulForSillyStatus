@@ -337,3 +337,83 @@
 .uic-engines button i {
     color: var(--c-accent);
 }
+
+/* Reference picture */
+.uic-body h3 small {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+}
+
+.uic-ref {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 10px;
+    border: 1px solid var(--c-line);
+    border-radius: 16px;
+    background: var(--c-card);
+}
+
+.uic-ref img {
+    flex: 0 0 96px;
+    width: 96px;
+    height: 128px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.uic-ref .uic-dim {
+    margin-bottom: 8px;
+}
+
+.uic-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+}
+
+.uic-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--c-accent);
+}
+
+.uic-ghost.uic-small {
+    width: auto;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 0.85em;
+}
+
+.uic-seen {
+    margin-bottom: 6px;
+    padding: 10px 12px;
+    border: 1px dashed var(--uio-accent-line, rgba(181, 108, 255, 0.45));
+    border-radius: 14px;
+    background: var(--c-soft);
+}
+
+.uic-seen summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.uic-seen summary img {
+    width: 32px;
+    height: 42px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.uic-seen p {
+    margin: 10px 0 0;
+    font-size: 0.88em;
+    line-height: 1.5;
+    color: var(--c-dim);
+}
