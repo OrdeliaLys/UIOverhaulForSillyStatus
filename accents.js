@@ -11,34 +11,34 @@ export const ACCENTS = {
         name: 'French', flag: '🇫🇷',
         grammar: 'literal French structures: "I am here since one hour", "I have twenty years", "it is not possible"; questions by tone ("You are coming?"); few contractions; tag "no?" or "non?"',
         sound: '"th" becomes z/s ("zis", "ze", "sink"); dropped h ("\'ow", "\'ere", "\'ungry"); stress on the last syllable; "eet" for "it" only when thick',
-        words: 'eh bien, voilà, bof, alors, mon Dieu, chéri(e), n\'est-ce pas, comment dire…, putain when cursing',
+        words: "eh bien (well…, starting a thought), voilà (there it is / done), bof (meh, unimpressed shrug), alors (so…, now then), mon Dieu (my God, shock), chéri / chérie (darling, affectionate), n'est-ce pas (isn't it?, at the end of a statement), putain (fuck, when cursing)",
         rhythm: 'searches for words ("how you say…"), shrugging understatement, a little theatrical',
         sample: '"Ah, non, non. You cannot just come \'ere like zis, without to call first. Comment dire… it is very rude, no?"',
-        hard: '"th" words (the, think, three, with), words starting with h (hungry, house, happy), "world", "squirrel", "rural", stress in long words (comfortable, vegetable, development); may say a French word when the English one won\'t come',
+        hard: '"th" words (the, think, three, with), words starting with h (hungry, house, happy), "world", "squirrel", "rural", stress in long words (comfortable, vegetable, development); when a word won\'t come they pause, describe it, or settle for a simpler one',
     },
     japanese: {
         name: 'Japanese', flag: '🇯🇵',
         grammar: 'drops articles and plurals ("I go to store"); topic first ("This food… very delicious"); avoids a direct "no" ("That is a little… difficult"); formal, polite phrasing; repeats apologies',
         sound: 'light: "th" as s/z; at thick only, a soft extra vowel on some word endings ("sank you", "very nice-u")',
-        words: 'ano…, eto…, hai, sou desu ne, sugoi, maa, -san / -chan / -kun / -sama, kawaii, baka when annoyed',
+        words: "ano… / eto… (um…, hesitating), hai (yes / understood), sou desu ne (I see, that's right, agreeing thoughtfully), sugoi (amazing, impressed), maa (well…, softening), -san / -chan / -kun / -sama (after names: polite / cute / for boys / very respectful), kawaii (cute), baka (idiot, annoyed or teasing)",
         rhythm: 'hesitant fillers, indirect and polite, sentences trail off instead of finishing a refusal',
         sample: '"Ano… sorry, sorry. I did not know this is your seat. Maa, if is okay… I sit here only a little, ne?"',
-        hard: 'consonant clusters and word endings (strengths, months, asked, world), "th" words, long Latin words (particularly, unfortunately), choosing between a/the; may fall back on a Japanese word or katakana-English ("konbini", "pasokon")',
+        hard: 'consonant clusters and word endings (strengths, months, asked, world), "th" words, long Latin words (particularly, unfortunately), choosing between a/the; when a word won\'t come they hesitate ("ano…") and describe it',
     },
     mandarin: {
         name: 'Mandarin Chinese', flag: '🇨🇳',
         grammar: 'verbs stay in the present ("Yesterday I go"); no articles; "already" marks finished actions ("I eat already"); "can or not?"; doubled words for emphasis ("very very good", "slowly slowly")',
         sound: 'final consonants softened or dropped; "th" as s/d; light respelling only',
-        words: 'aiya, wah, hao, ah or la at the end of sentences, dui dui, mei you, ni hao, laoban',
+        words: "aiya (exasperated sigh: oh no / come on), wah (wow, impressed or shocked), hao (okay / fine, agreeing), dui (right / correct, only when agreeing with what someone said), mei you (there isn't any / no), la or ah at the end of a sentence (softens it; sparing)",
         rhythm: 'direct, blunt, practical; short sentences; haggling energy',
         sample: '"Aiya, why you so late? Food already cold! Sit, sit. You eat or not?"',
-        hard: 'final consonant clusters (asked, months, sixth, texts), "th" words, plurals and past tense endings, "v" vs "w", long multi-syllable words; may swap in a Chinese word',
+        hard: 'final consonant clusters (asked, months, sixth, texts), "th" words, plurals and past tense endings, "v" vs "w", long multi-syllable words; when a word won\'t come they describe it plainly',
     },
     singlish: {
         name: 'Singlish / Malaysian', flag: '🇸🇬',
         grammar: '"can" / "cannot" as whole answers; "got" for has/there is ("Got people inside"); drops "is"; repeats for emphasis; "already" for completed; "one" ending ("He very fierce one")',
         sound: 'clipped, fast; little respelling needed',
-        words: 'lah, leh, lor, meh, sia, alamak, walao eh, shiok, paiseh, kiasu, abuden',
+        words: "lah (end particle for emphasis: 'cannot lah'), leh (end particle, softer or complaining), lor (resigned: 'like that lor'), meh (doubting: 'really meh?'), sia (wow / damn, emphasis), alamak (oh no), walao eh (what the hell, exasperated), shiok (so satisfying), paiseh (embarrassed / sorry), kiasu (afraid to lose out)",
         rhythm: 'rapid, cheeky, particles at the end of almost every line',
         sample: '"Walao eh, you serious or not? Cannot lah, the boss sure scold one. Later then go, can?"',
         hard: 'few; formal or posh British words feel stiff and get swapped for local ones',
@@ -47,16 +47,16 @@ export const ACCENTS = {
         name: 'Korean', flag: '🇰🇷',
         grammar: 'drops articles and often subjects; verbs at the end of longer thoughts; polite forms with elders; "very" doubled when excited',
         sound: 'at moderate+: f as p ("pine" for fine), z as j ("jero"); thick: soft "-eu" on final consonants ("Starbucks-eu")',
-        words: 'aigoo, omo, daebak, jinjja?, ani, ne, hwaiting!, oppa / unnie / hyung / noona, ya!',
+        words: "aigoo (oh dear / tsk, sympathy or exasperation), omo (oh my!, surprised), daebak (awesome / huge), jinjja? (really?), ani (no), ne (yes), hwaiting! (you can do it!), oppa / unnie / hyung / noona (older brother or sister, chosen by both speakers' genders), ya! (hey!, sharp, to someone younger or close)",
         rhythm: 'swings from polite to dramatic, lots of exclamations',
         sample: '"Omo, jinjja? You make this for me? Aigoo… is so pretty. Thank you, really, really thank you."',
-        hard: '"f" words (coffee, fine, phone), "z" words (zero, zoo, pizza), "th" words, word-final clusters, a/the; may slip in a Korean word or Konglish ("hand phone", "fighting")',
+        hard: '"f" words (coffee, fine, phone), "z" words (zero, zoo, pizza), "th" words, word-final clusters, a/the; Konglish slips ("hand phone" for cell phone)',
     },
     russian: {
         name: 'Russian', flag: '🇷🇺',
         grammar: 'drops articles and "is" ("He here?", "Is cold"); free word order ("Good soup, this"); blunt statements of fact',
         sound: 'w as v ("vhat"), "th" as z, h as a throaty kh; rolled r',
-        words: 'da, nyet, nu, davai, blyat (cursing), ladno, bozhe moi, moy dorogoy / moya dorogaya',
+        words: "da (yes), nyet (no), nu (well…, so…), davai (come on / let's go), blyat (fuck, cursing), ladno (fine / okay, giving in), bozhe moi (my God), moy dorogoy / moya dorogaya (my dear, to a man / to a woman)",
         rhythm: 'flat, matter-of-fact, deadpan fatalistic humor',
         sample: '"Nyet. You do not go out in this. Is minus thirty, you die, then who I argue with? Davai, sit."',
         hard: 'a/the (dropped or misplaced), "th" words, "w" words (water, world, wow), short vowels (ship/sheep, full/fool), phrasal verbs (put up with, get over)',
@@ -65,7 +65,7 @@ export const ACCENTS = {
         name: 'German', flag: '🇩🇪',
         grammar: 'verb pushed to the end of side clauses ("because I it not knew"); "already" for impatience ("Come already"); tag "or?"; "since" for durations; very literal',
         sound: 'w as v ("vhy"), "th" as z/s, final d as t ("ant"), crisp consonants',
-        words: 'ja, genau, ach, doch, na ja, mein Gott, Scheiße, Schatz, also',
+        words: "ja (yes), genau (exactly, agreeing), ach (oh, sighing), doch (yes it is!, contradicting a 'no'), na ja (well…, hedging), mein Gott (my God), Scheiße (shit), Schatz (darling), also (so / well, starting a sentence; never 'also' in the English sense)",
         rhythm: 'precise, direct, slightly formal, dry humor',
         sample: '"Ja, but this is not how it works, or? First you ask, then you take. Ach, never mind. Come already."',
         hard: '"th" words, "w" vs "v" (very, wine, vacation), soft "j" (jump, just), phrasal verbs and idioms; false friends ("become" meaning get, "actual" meaning current)',
@@ -74,7 +74,7 @@ export const ACCENTS = {
         name: 'Spanish', flag: '🇪🇸',
         grammar: 'subject dropped ("Is very late", "Is my house"); adjective after noun; double negatives ("I don\'t say nothing"); tag "no?"',
         sound: 'extra e before s + consonant ("espeak", "estupid"); short i as ee ("leetle", "theeng"); b and v blur',
-        words: 'mira, oye, ay, Dios mío, cariño, pues, vale, joder (Spain) or órale (Mexico), mi amor',
+        words: "mira (look…, to get attention), oye (hey / listen), ay (oh!, any strong feeling), Dios mío (my God), cariño (sweetheart), pues (well…, filler), vale (okay, Spain), joder (fuck, Spain) or órale (alright / let's go, Mexico), mi amor (my love)",
         rhythm: 'fast, warm, expressive, rising and falling',
         sample: '"Ay, mira, cariño, is not my fault! I tell you before, no? Is a leetle bit dangerous, pero you don\'t listen."',
         hard: 'words starting with s + consonant (school, speak, stop), "sh" vs "ch" (sheep, chair), "j" and "y" (yes, jelly), short i vs ee (ship/sheep, live/leave), "th" words; false friends ("embarrassed" ≠ pregnant, "actually")',
@@ -83,7 +83,7 @@ export const ACCENTS = {
         name: 'Italian', flag: '🇮🇹',
         grammar: 'subject dropped ("Is beautiful"); adjective after noun; exclamations as whole sentences',
         sound: 'at moderate+: a soft vowel after some final consonants ("big-a", "it\'s-a"); dropped h ("\'ouse")',
-        words: 'allora, dai, mamma mia, madonna, ecco, basta, cara / caro, tesoro, figurati',
+        words: "allora (so / well then), dai (come on!), mamma mia (oh my), madonna (God!, frustration), ecco (there / here it is), basta (enough!), cara / caro (dear, to a woman / man), tesoro (treasure, darling), figurati (don't mention it / as if!)",
         rhythm: 'musical and animated, talks with the hands, quick mood swings',
         sample: '"Allora, listen to me, tesoro. You go, you come back, is-a fine. But you don\'t lie to me, capito? Basta."',
         hard: 'words starting with h, "th" words, word-final consonants (a soft vowel creeps in), short i vs ee, silent letters (knife, Wednesday, island)',
@@ -92,7 +92,7 @@ export const ACCENTS = {
         name: 'Irish', flag: '🇮🇪',
         grammar: '"after" perfect ("I\'m after eating"); "so it is" tags; "himself / herself" for the boss; "ye" for plural you',
         sound: '"th" as t or d ("tree" for three); soft r; "me" for my',
-        words: 'grand, sure, eejit, feck, craic, wee, yer man / yer one, go way outta that',
+        words: "grand (fine, okay), sure (as a softener: 'sure it's fine'), eejit (idiot), feck (mild fuck), craic (fun / gossip: 'what's the craic?'), wee (small), yer man / yer one (that guy / that woman), go way outta that (no way!, disbelief)",
         rhythm: 'lilting, storytelling, teasing',
         sample: '"Ah, go way outta that. Sure I\'m only after getting here meself. Yer man\'s an eejit, so he is."',
         hard: 'none really; they just use their own words for things',
@@ -101,7 +101,7 @@ export const ACCENTS = {
         name: 'Scottish', flag: '🏴',
         grammar: '"cannae" / "dinnae" / "willnae"; "ye" for you; "aye" for yes',
         sound: 'rolled r; "oo" for "ou" ("aboot", "hoose"); dropped g ("nothin\'")',
-        words: 'aye, wee, ken, lass / lad, bonnie, och, numpty, braw, greetin\' (crying)',
+        words: "aye (yes), wee (small), ken (know / you know), lass / lad (girl / boy), bonnie (pretty), och (oh, exasperated), numpty (idiot), braw (great), greetin' (crying)",
         rhythm: 'warm but blunt, dry sarcasm',
         sample: '"Och, ye cannae be serious, lass. Wee bit o\' rain never killed naebody. Get yer boots on."',
         hard: 'none really; they just use their own words for things',
@@ -110,7 +110,7 @@ export const ACCENTS = {
         name: 'Southern US', flag: '🇺🇸',
         grammar: '"y\'all", "fixin\' to", "might could", "ain\'t", double modals',
         sound: 'drawn-out vowels, dropped g ("darlin\'", "nothin\'"), "I" as "Ah" when thick',
-        words: 'sugar, darlin\', bless your heart, howdy, reckon, yonder, holler',
+        words: "sugar / darlin' (affectionate, to anyone), bless your heart (sympathy, or a polite insult), howdy (hello), reckon (think / suppose), yonder (over there), holler (shout / call)",
         rhythm: 'slow, warm, sweet-talking even when insulting',
         sample: '"Well bless your heart, sugar. Y\'all were fixin\' to leave without sayin\' goodbye? I reckon not."',
         hard: 'none; posh or technical words come out sounding put-on',
@@ -119,7 +119,7 @@ export const ACCENTS = {
         name: 'Cockney / London', flag: '🇬🇧',
         grammar: '"ain\'t", "innit", "me" for my, double negatives',
         sound: 'dropped h ("\'ow", "\'ouse"), glottal t ("bo\'le", "wa\'er"), "th" as f/v ("fink", "muvver")',
-        words: 'mate, love, guv, bloody, bruv, proper, blimey, innit, sod off',
+        words: "mate (friend, to anyone), love (to a woman or anyone, friendly), guv (boss / sir), bloody (intensifier), bruv (bro), proper (very: 'proper good'), blimey (wow), innit (isn't it, tag at the end), sod off (go away)",
         rhythm: 'quick, cheeky, street-smart',
         sample: '"Oi, \'ow\'d you get in \'ere, love? Ain\'t nobody s\'posed to know abaht this place, innit."',
         hard: 'none; posh or formal words come out sounding put-on',
@@ -128,7 +128,7 @@ export const ACCENTS = {
         name: 'Indian English', flag: '🇮🇳',
         grammar: '"itself" / "only" for emphasis ("today itself", "I was there only"); "isn\'t it?" as a universal tag; continuous forms ("I am knowing him"); "do one thing…"',
         sound: 'crisp t and d, w and v close together; light respelling only',
-        words: 'yaar, arre, achha, ji, bas, haan, na, beta, chalo',
+        words: "yaar (buddy / man, friendly), arre (hey / oh, surprise or protest), achha (okay / I see / really?), ji (respectful, after names or as 'yes'), bas (enough / that's it), haan (yes), na (tag: 'come na'), beta (child, from someone older), chalo (let's go / okay then)",
         rhythm: 'warm, fast, expressive, polite teasing',
         sample: '"Arre yaar, why you are worrying so much? Do one thing, sit, have chai. We will fix it today itself, achha?"',
         hard: '"v" vs "w" (very, wet), "th" words, some idioms and slang (they use their own instead), British vs American usage mixing',
@@ -137,7 +137,7 @@ export const ACCENTS = {
         name: 'Arabic', flag: '🌙',
         grammar: 'drops "is/are" ("He very tired"); oaths for emphasis; generous, formal greetings',
         sound: 'at moderate+: p as b ("beoble", "blease"); emphatic h',
-        words: 'yalla, habibi / habibti, wallah, inshallah, khalas, ya (before names), mashallah',
+        words: "yalla (come on / let's go), habibi / habibti (my dear, to a man / to a woman), wallah (I swear, emphasis), inshallah (God willing; also a polite maybe), khalas (enough / done), ya before a name (calling them: 'ya Kira'), mashallah (praise, admiring something)",
         rhythm: 'warm, emphatic, hospitable, dramatic',
         sample: '"Wallah, habibti, I tell you the truth! Yalla, come, come, sit. Khalas, no more fighting tonight."',
         hard: '"p" words (people, please, pepper), "v" words (very, voice), vowel-heavy words, consonant clusters (strengths, splendid), a/the and is/are',
@@ -147,9 +147,9 @@ export const ACCENTS = {
 
 const STRENGTH = [
     null,
-    'a hint: mostly word choice and rhythm, an occasional grammar slip, almost no respelling',
-    'clearly there: their grammar habits in most lines, a couple of respelled sounds per line, a native word now and then',
-    'thick: grammar habits in nearly every line, frequent respelled sounds, native words and fillers, but every line stays easy to read',
+    'a hint: mostly word choice and rhythm, an occasional grammar slip, almost no respelling, and a native word only rarely (not every reply)',
+    'clearly there: their grammar habits in most lines, a couple of respelled sounds per line, and at most one native word per reply',
+    'thick: grammar habits in nearly every line, frequent respelled sounds, and at most two native words per reply; every line stays easy to read',
 ];
 export const STRENGTH_NAMES = ['', 'Hint', 'Moderate', 'Thick'];
 
@@ -191,7 +191,7 @@ export function createAccents(h) {
         const parts = [
             p.grammar && `Grammar: ${p.grammar}`,
             p.sound && `Sounds: ${p.sound}`,
-            p.words && `Words and fillers: ${p.words}`,
+            p.words && `Native words they may use (only with these meanings, in these situations): ${p.words}`,
             p.rhythm && `Rhythm: ${p.rhythm}`,
             p.hard && !/^none/i.test(p.hard) && `Hard for them: ${p.hard}. Now and then (not every line) they stumble on these: a slightly off pronunciation, a pause to find the word, a simpler word instead, or asking how to say it`,
             p.sample && `Example: ${p.sample}`,
@@ -243,7 +243,11 @@ export function createAccents(h) {
         if (!c.setExtensionPrompt) return;
         const entries = h.settings().enabled ? activeEntries() : [];
         const text = entries.length
-            ? `[Accents and vocabulary. Write these characters' spoken dialogue with their accent, every time they speak, and keep it up for the whole chat. Narration stays in normal English, and nobody else picks it up. Carry it mostly through grammar, rhythm and word choice; respell sounds only as much as the strength says, keeping every line readable. Base it on how real speakers talk, not cartoon stereotypes.\n${entries.map(e => line(e.name, e.a)).join('\n')}]`
+            ? `[Accents and vocabulary. Write these characters' spoken dialogue with their accent, every time they speak, and keep it up for the whole chat. Narration stays in normal English, and nobody else picks it up. Carry it mostly through grammar, rhythm and word choice; respell sounds only as much as the strength says, keeping every line readable. ` +
+                'Native words are rare seasoning, not a verbal tic: only from the list, only with the meaning given, only where a real speaker would naturally say it, and never more than the strength allows. ' +
+                'Never translate or gloss: no foreign word followed by its English meaning ("mot… (word)", "X, which means Y"). If a word wouldn\'t be clear from context, say it in English instead. ' +
+                'When they can\'t find an English word they hesitate, describe it or pick a simpler one; they don\'t switch to their own language mid-sentence. ' +
+                `Base it on how real speakers talk, not cartoon stereotypes.\n${entries.map(e => line(e.name, e.a)).join('\n')}]`
             : '';
         // In the chat, one message from the end: close to where the reply is written.
         c.setExtensionPrompt(KEY, text, 1, 1, false, 0);
@@ -254,7 +258,9 @@ export function createAccents(h) {
         const system = 'You write short in-character dialogue samples showing a character\'s accent, for an adult fiction app. Reply with the lines only.';
         const user = `Character: ${name}. Accent: ${a.id === 'custom' ? (a.custom?.name || 'custom') : ACCENTS[a.id]?.name}, ${STRENGTH[a.strength ?? 2]}.\n${profileText(a)}\n\n` +
             'Write 3 short lines this character might say (one greeting someone, one annoyed, one flirty or excited), each on its own line in quotes, with a short *action* if you like. ' +
-            'Carry the accent through grammar, rhythm and word choice first, respelling only as much as the strength allows. Stay readable. Base it on how real speakers talk, not stereotypes.';
+            'Carry the accent through grammar, rhythm and word choice first, respelling only as much as the strength allows. Stay readable. ' +
+            'Use native words sparingly (at most one across the three lines unless the strength is thick), only with the meanings listed, and never add a translation or gloss after a foreign word. ' +
+            'Base it on how real speakers talk, not stereotypes.';
         return ask(c, system, user, 1500);
     }
 
@@ -269,7 +275,7 @@ export function createAccents(h) {
             `Known accents: ${Object.entries(ACCENTS).filter(([k]) => k !== 'custom').map(([k, v]) => `${k} (${v.name})`).join(', ')}.\n\n` +
             'Which accent fits this character, if any? Reply in exactly this format:\n' +
             'ACCENT: <one key from the list, or "custom", or "none">\nSTRENGTH: <1, 2 or 3>\n' +
-            'NAME: <if custom: the accent\'s name>\nGRAMMAR: <if custom: grammar habits>\nSOUNDS: <if custom: how sounds come through>\nWORDS: <if custom: native words and fillers>\nRHYTHM: <if custom: how they talk>\nHARD: <if custom: English words and sounds that are hard for them>\n' +
+            'NAME: <if custom: the accent\'s name>\nGRAMMAR: <if custom: grammar habits>\nSOUNDS: <if custom: how sounds come through>\nWORDS: <if custom: a few native words, each with its meaning in brackets>\nRHYTHM: <if custom: how they talk>\nHARD: <if custom: English words and sounds that are hard for them>\n' +
             `NOTES: <anything specific to this character, one line>\n${BLUNT}`;
         const raw = await ask(c, system, user, 1500);
         const f = {};
@@ -398,7 +404,7 @@ export function createAccents(h) {
                     <input class="text_pole" data-accf="name" placeholder="Accent name (e.g. Quebec French, Thai)" value="${esc(c.name ?? '')}">
                     <textarea class="text_pole" rows="2" data-accf="grammar" placeholder="Grammar habits">${esc(c.grammar ?? '')}</textarea>
                     <textarea class="text_pole" rows="2" data-accf="sound" placeholder="How sounds come through">${esc(c.sound ?? '')}</textarea>
-                    <textarea class="text_pole" rows="2" data-accf="words" placeholder="Native words and fillers">${esc(c.words ?? '')}</textarea>
+                    <textarea class="text_pole" rows="2" data-accf="words" placeholder="Native words with their meaning, e.g. mai pen rai (never mind)">${esc(c.words ?? '')}</textarea>
                     <textarea class="text_pole" rows="2" data-accf="hard" placeholder="English words and sounds that are hard for them">${esc(c.hard ?? '')}</textarea>` : `
                     <p class="uio-acc-about">${esc(ACCENTS[a.id]?.sample ?? '')}</p>
                     ${ACCENTS[a.id]?.hard ? `<p class="uio-acc-hard"><b>Hard for them:</b> ${esc(ACCENTS[a.id].hard)}</p>` : ''}`}
