@@ -153,6 +153,30 @@ const STRENGTH = [
 ];
 export const STRENGTH_NAMES = ['', 'Hint', 'Moderate', 'Thick'];
 
+// How much English they have, separate from how they sound.
+export const LEVELS = {
+    fluent: {
+        name: 'Fluent',
+        rule: 'English level FLUENT: full vocabulary and grammar; only the accent shows.',
+        example: '"I told you, the bed is mine. Find somewhere else to sleep."',
+    },
+    conversational: {
+        name: 'Conversational',
+        rule: 'English level CONVERSATIONAL: gets by fine in everyday talk; grammar slips and some missing words, simpler vocabulary than a native speaker, few idioms, occasionally misses a fast or complicated sentence.',
+        example: '"I tell you first, this room is very small and the bed is mine. You find other place."',
+    },
+    basic: {
+        name: 'Basic',
+        rule: 'English level BASIC: short simple sentences of about 3-8 words, one idea each. Only common everyday words (no idioms, slang, abstract or technical words; never "angle", "honestly", "apparently"). Mostly present tense, often drops articles and small words. Builds meaning by repeating and pointing. Understands only simple, slow English: when someone says something long or uses an unusual word, they catch part of it, ask "What?" / "Again, slowly", or answer the wrong thing.',
+        example: '"You new roommate? Room small. Bed is mine. You… other place."',
+    },
+    barely: {
+        name: 'Barely any',
+        rule: 'English level BARELY ANY: knows only a few hundred English words. Speaks in 1-4 word fragments strung together ("Bed. Mine. You — floor."), mostly nouns, simple verbs, yes/no, numbers and names. No full sentences with correct grammar, no idioms, no complex words at all. Leans on gestures, pointing, tone and facial expressions to get meaning across. Understands almost nothing of normal English: picks out single familiar words, reacts to tone and gestures, and often misunderstands. When frustrated or excited they may burst into a whole sentence in their own language (the one exception to the native-word limit); leave it untranslated and let their tone and gestures show what they mean.',
+        example: '*She points at the bed, then at herself.* "Mine. Mine." *Then at you, then the floor.* "You… there. Okay?"',
+    },
+};
+
 export function createAccents(h) {
     // h: { ctx, settings, save, escapeHtml }
     const KEY = 'uio_accents';
@@ -172,7 +196,7 @@ export function createAccents(h) {
     }
 
     function set(key, value) {
-        if (!value || (!value.id && !value.unknown?.length)) delete store()[key];
+        if (!value || (!value.id && !value.unknown?.length && !value.level)) delete store()[key];
         else store()[key] = value;
         h.save();
         update();
@@ -180,10 +204,11 @@ export function createAccents(h) {
 
     function describe(a) {
         const n = a?.unknown?.length ?? 0;
-        if (!a?.id) return n ? `No accent · ${n} unknown word${n === 1 ? '' : 's'}` : 'None';
+        const lv = a?.level && LEVELS[a.level] ? ` · ${LEVELS[a.level].name} English` : '';
+        if (!a?.id) return n || lv ? `No accent${lv}${n ? ` · ${n} unknown` : ''}` : 'None';
         const p = ACCENTS[a.id];
         const nm = a.id === 'custom' ? (a.custom?.name || 'Custom') : p?.name;
-        return `${nm} · ${STRENGTH_NAMES[a.strength ?? 2]}${n ? ` · ${n} unknown` : ''}`;
+        return `${nm} · ${STRENGTH_NAMES[a.strength ?? 2]}${lv}${n ? ` · ${n} unknown` : ''}`;
     }
 
     function profileText(a) {
@@ -202,10 +227,11 @@ export function createAccents(h) {
     }
 
     function line(name, a) {
-        if (!a.id) return `- ${name}: ${profileText(a)}`;
+        const lvl = a.level && LEVELS[a.level] ? ` ${LEVELS[a.level].rule} This overrides anything about their English that the accent or card implies; keep it up every time they speak.` : '';
+        if (!a.id) return `- ${name}:${lvl} ${profileText(a)}`.trimEnd();
         const p = a.id === 'custom' ? (a.custom ?? {}) : ACCENTS[a.id];
         const label = a.id === 'custom' ? (p.name || 'their own') : p.name;
-        return `- ${name}: ${label} accent, ${STRENGTH[a.strength ?? 2]}. ${profileText(a)}`;
+        return `- ${name}: ${label} accent, ${STRENGTH[a.strength ?? 2]}.${lvl} ${profileText(a)}`;
     }
 
     // Who has an accent in the current scene.
@@ -214,7 +240,7 @@ export function createAccents(h) {
         const out = [];
         const seen = new Set();
         const add = (name, a) => {
-            if (!(a?.id || a?.unknown?.length) || !name || seen.has(name.toLowerCase())) return;
+            if (!(a?.id || a?.unknown?.length || a?.level) || !name || seen.has(name.toLowerCase())) return;
             seen.add(name.toLowerCase());
             out.push({ name, a });
         };
@@ -256,7 +282,7 @@ export function createAccents(h) {
     async function sample(name, a) {
         const c = h.ctx();
         const system = 'You write short in-character dialogue samples showing a character\'s accent, for an adult fiction app. Reply with the lines only.';
-        const user = `Character: ${name}. Accent: ${a.id === 'custom' ? (a.custom?.name || 'custom') : ACCENTS[a.id]?.name}, ${STRENGTH[a.strength ?? 2]}.\n${profileText(a)}\n\n` +
+        const user = `Character: ${name}. ${a.id ? `Accent: ${a.id === 'custom' ? (a.custom?.name || 'custom') : ACCENTS[a.id]?.name}, ${STRENGTH[a.strength ?? 2]}.` : ''}${a.level ? ` ${LEVELS[a.level].rule}` : ''}\n${profileText(a)}\n\n` +
             'Write 3 short lines this character might say (one greeting someone, one annoyed, one flirty or excited), each on its own line in quotes, with a short *action* if you like. ' +
             'Carry the accent through grammar, rhythm and word choice first, respelling only as much as the strength allows. Stay readable. ' +
             'Use native words sparingly (at most one across the three lines unless the strength is thick), only with the meanings listed, and never add a translation or gloss after a foreign word. ' +
@@ -274,21 +300,23 @@ export function createAccents(h) {
         const user = `Card for ${ch.name}:\n${cut(ch.description || ch.data?.description, 1500)}\n${ch.personality ? `Personality: ${cut(ch.personality, 300)}` : ''}\n${ch.first_mes ? `Opening: ${cut(ch.first_mes, 500)}` : ''}\n\n` +
             `Known accents: ${Object.entries(ACCENTS).filter(([k]) => k !== 'custom').map(([k, v]) => `${k} (${v.name})`).join(', ')}.\n\n` +
             'Which accent fits this character, if any? Reply in exactly this format:\n' +
-            'ACCENT: <one key from the list, or "custom", or "none">\nSTRENGTH: <1, 2 or 3>\n' +
+            'ACCENT: <one key from the list, or "custom", or "none">\nSTRENGTH: <1, 2 or 3>\nLEVEL: <their English: fluent, conversational, basic or barely>\n' +
             'NAME: <if custom: the accent\'s name>\nGRAMMAR: <if custom: grammar habits>\nSOUNDS: <if custom: how sounds come through>\nWORDS: <if custom: a few native words, each with its meaning in brackets>\nRHYTHM: <if custom: how they talk>\nHARD: <if custom: English words and sounds that are hard for them>\n' +
             `NOTES: <anything specific to this character, one line>\n${BLUNT}`;
         const raw = await ask(c, system, user, 1500);
         const f = {};
         for (const l of raw.split(/\r?\n/)) {
-            const m = /^[\s*#\-]*\**(ACCENT|STRENGTH|NAME|GRAMMAR|SOUNDS|WORDS|RHYTHM|HARD|NOTES)\**\s*[:：]\s*(.*)$/i.exec(l);
+            const m = /^[\s*#\-]*\**(ACCENT|STRENGTH|LEVEL|NAME|GRAMMAR|SOUNDS|WORDS|RHYTHM|HARD|NOTES)\**\s*[:：]\s*(.*)$/i.exec(l);
             if (m) f[m[1].toUpperCase()] = m[2].replace(/\*\*/g, '').trim();
         }
         const id = String(f.ACCENT ?? '').toLowerCase().replace(/[^a-z]/g, '');
-        if (!id || id === 'none') return null;
+        const lvWord = String(f.LEVEL ?? '').toLowerCase();
+        const level = Object.keys(LEVELS).find(k => lvWord.includes(k)) ?? (/barely|none|little/.test(lvWord) ? 'barely' : undefined);
+        if (!id || id === 'none') return level ? { id: '', strength: 2, level } : null;
         const strength = Math.min(3, Math.max(1, parseInt(f.STRENGTH, 10) || 2));
-        if (ACCENTS[id] && id !== 'custom') return { id, strength, notes: f.NOTES && !/^none|^-$/i.test(f.NOTES) ? cut(f.NOTES, 200) : '' };
+        if (ACCENTS[id] && id !== 'custom') return { id, strength, level, notes: f.NOTES && !/^none|^-$/i.test(f.NOTES) ? cut(f.NOTES, 200) : '' };
         return {
-            id: 'custom', strength,
+            id: 'custom', strength, level,
             custom: { name: cut(f.NAME || 'Custom', 40), grammar: cut(f.GRAMMAR, 300), sound: cut(f.SOUNDS, 300), words: cut(f.WORDS, 300), rhythm: cut(f.RHYTHM, 200), hard: cut(f.HARD, 300) },
             notes: f.NOTES && !/^none|^-$/i.test(f.NOTES) ? cut(f.NOTES, 200) : '',
         };
@@ -409,6 +437,14 @@ export function createAccents(h) {
                     <p class="uio-acc-about">${esc(ACCENTS[a.id]?.sample ?? '')}</p>
                     ${ACCENTS[a.id]?.hard ? `<p class="uio-acc-hard"><b>Hard for them:</b> ${esc(ACCENTS[a.id].hard)}</p>` : ''}`}
                 <input class="text_pole" data-accnotes placeholder="Notes (e.g. only when angry, Quebec not Paris)" value="${esc(a.notes ?? '')}">` : ''}
+                <div class="uio-acc-levelbox">
+                    <b>How much English</b>
+                    <div class="uio-acc-strength uio-acc-level">
+                        <button type="button" class="${!a.level ? 'uio-on' : ''}" data-acclevel="">Not set</button>
+                        ${Object.entries(LEVELS).map(([k, l]) => `<button type="button" class="${a.level === k ? 'uio-on' : ''}" data-acclevel="${k}">${l.name}</button>`).join('')}
+                    </div>
+                    ${a.level ? `<p class="uio-acc-about">${esc(LEVELS[a.level].example)}</p>` : ''}
+                </div>
                 <div class="uio-acc-unknown">
                     <b>Words they don't know</b>
                     <div class="uio-acc-words">${(a.unknown ?? []).map(w => `<span>${esc(w)}<button type="button" data-accunword="${esc(w)}" title="They know it now">×</button></span>`).join('') || '<small>None yet. Words they ask about in the story are added here.</small>'}</div>
@@ -416,7 +452,7 @@ export function createAccents(h) {
                 </div>
                 <div class="uio-acc-actions">
                     ${state.index !== undefined ? `<button type="button" class="menu_button" data-accsuggest="${state.index}"${state.busy === 'suggest' ? ' disabled' : ''}><i class="fa-solid fa-wand-magic-sparkles"></i> ${state.busy === 'suggest' ? 'Reading the card…' : 'Suggest from card'}</button>` : ''}
-                    ${a.id ? `<button type="button" class="menu_button" data-accsample${state.busy === 'sample' ? ' disabled' : ''}><i class="fa-solid fa-comment-dots"></i> ${state.busy === 'sample' ? 'Writing…' : 'Read a sample'}</button>` : ''}
+                    ${a.id || a.level ? `<button type="button" class="menu_button" data-accsample${state.busy === 'sample' ? ' disabled' : ''}><i class="fa-solid fa-comment-dots"></i> ${state.busy === 'sample' ? 'Writing…' : 'Read a sample'}</button>` : ''}
                 </div>
                 ${state.sample ? `<div class="uio-acc-sample">${esc(state.sample).replace(/\n/g, '<br>')}</div>` : ''}
                 ${state.error ? `<p class="uio-acc-err">${esc(state.error)}</p>` : ''}
@@ -433,16 +469,21 @@ export function createAccents(h) {
             const name = box.dataset.accname;
             const cur = get(key) ?? { id: '', strength: 2 };
             const state = stateFor(key);
-            const t = e.target.closest('[data-acc], [data-accstr], [data-accsample], [data-accsuggest], [data-accunword]');
+            const t = e.target.closest('[data-acc], [data-accstr], [data-accsample], [data-accsuggest], [data-accunword], [data-acclevel]');
             if (!t) return;
             e.stopPropagation();
+            if (t.dataset.acclevel !== undefined) {
+                set(key, { ...cur, level: t.dataset.acclevel || undefined, displayName: cur.displayName ?? (key.startsWith('name:') ? name : undefined) });
+                state.sample = '';
+                return rerender();
+            }
             if (t.dataset.accunword !== undefined) {
                 forget(key, t.dataset.accunword);
                 return rerender();
             }
             if (t.dataset.acc !== undefined) {
                 const id = t.dataset.acc;
-                set(key, id ? { ...cur, id, displayName: key.startsWith('name:') ? name : undefined } : (cur.unknown?.length ? { unknown: cur.unknown, displayName: cur.displayName } : null));
+                set(key, id ? { ...cur, id, displayName: key.startsWith('name:') ? name : undefined } : (cur.unknown?.length || cur.level ? { unknown: cur.unknown, level: cur.level, displayName: cur.displayName } : null));
                 state.sample = '';
                 return rerender();
             }

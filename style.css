@@ -1712,3 +1712,21 @@ body.uio-chrome .list-group {
     opacity: 0.6;
     cursor: pointer;
 }
+
+.uio-acc-levelbox {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.uio-acc-levelbox > b {
+    font-size: 0.85em;
+}
+
+.uio-acc-level {
+    flex-wrap: wrap;
+}
+
+.uio-acc-level button {
+    flex: 1 1 40%;
+}
